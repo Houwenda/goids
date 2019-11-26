@@ -1,0 +1,28 @@
+ui:
+    enable: false
+    ip: "localhost"
+    port: 3690
+    location: "abcd"
+rules:
+    pkt_rules: ["/home/hwd/go/src/goids/config/pkt_rules.rules"]
+    stream_rules: ["/home/hwd/go/src/goids/config/stream_rules.rules"]
+multi_threads:
+    max_proc: 3
+    strict_mode:
+        enable: true
+        group_num: 2
+        worker_num: 2
+log:
+    path: "/home/hwd/Desktop/goids.log"
+    level: "debug"
+alarm:
+    mail:
+        enable: true
+        max_freq: 300
+        server_address: "smtp.yeah.net"
+        username: "houwd123@yeah.net"
+        auth_key: "cilin123"
+        receivers: ["799973244@qq.com"]
+    scripts: []
+
+
