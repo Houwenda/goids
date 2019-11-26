@@ -100,5 +100,15 @@ func (c *Config) Validate(logLevels []string) error {
 	if !flag {
 		return errors.New("invalid log level : " + c.LogConf.Level)
 	}
+	// check number
+	if c.MultiThreadsConf.MaxProc <= 0 {
+		return errors.New("invalid max number of processes : ")
+	}
+	if c.MultiThreadsConf.StrictModeConf.Enable && c.MultiThreadsConf.StrictModeConf.GroupNum <= 0 {
+		return errors.New("invalid max number of groups : ")
+	}
+	if c.MultiThreadsConf.StrictModeConf.Enable && c.MultiThreadsConf.StrictModeConf.WorkerNum <= 0 {
+		return errors.New("invalid max number of workers : ")
+	}
 	return nil
 }

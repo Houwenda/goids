@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goids/analyzer"
 	"goids/config"
+	"os"
 )
 
 var (
@@ -13,10 +14,14 @@ var (
 )
 
 func init() {
+
+	// TODO: get config file path from command line
+
 	var c config.Config
 	Conf, err := c.Parse("/home/hwd/go/src/goids/config/goids.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 	fmt.Println(Conf.UiConf)
 	fmt.Println(Conf.RulesConf)
@@ -25,7 +30,10 @@ func init() {
 	fmt.Println(Conf.AlarmConf)
 	if err = c.Validate(LogLevels); err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
+	// TODO: create logger
+
 	// TODO: parse rules
 
 }
