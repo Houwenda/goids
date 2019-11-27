@@ -5,6 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"regexp"
 )
 
 type Ui struct {
@@ -26,13 +27,14 @@ type Log struct {
 
 type StrictMode struct {
 	Enable    bool  `yaml:"enable"`
-	GroupNum  int32 `yaml:"group_num"`
 	WorkerNum int32 `yaml:"worker_num"`
 }
 
-type MultiThreads struct {
+type Analyzer struct {
 	MaxProc        int32      `yaml:"max_proc"`
+	GroupNum       int32      `yaml:"group_num"`
 	StrictModeConf StrictMode `yaml:"strict_mode"`
+	Interfaces     []string   `yaml:"interfaces,flow"`
 }
 
 type Mail struct {
@@ -50,11 +52,11 @@ type Alarm struct {
 }
 
 type Config struct {
-	UiConf           Ui           `yaml:"ui"`
-	RulesConf        Rules        `yaml:"rules"`
-	LogConf          Log          `yaml:"log"`
-	MultiThreadsConf MultiThreads `yaml:"multi_threads"`
-	AlarmConf        Alarm        `yaml:"alarm"`
+	UiConf       Ui       `yaml:"ui"`
+	RulesConf    Rules    `yaml:"rules"`
+	LogConf      Log      `yaml:"log"`
+	AnalyzerConf Analyzer `yaml:"analyzer"`
+	AlarmConf    Alarm    `yaml:"alarm"`
 }
 
 func (c *Config) Parse(path string) (*Config, error) {
@@ -101,14 +103,20 @@ func (c *Config) Validate(logLevels []string) error {
 		return errors.New("invalid log level : " + c.LogConf.Level)
 	}
 	// check number
-	if c.MultiThreadsConf.MaxProc <= 0 {
+	if c.AnalyzerConf.MaxProc <= 0 {
 		return errors.New("invalid max number of processes : ")
 	}
-	if c.MultiThreadsConf.StrictModeConf.Enable && c.MultiThreadsConf.StrictModeConf.GroupNum <= 0 {
+	if c.AnalyzerConf.GroupNum <= 0 {
 		return errors.New("invalid max number of groups : ")
 	}
-	if c.MultiThreadsConf.StrictModeConf.Enable && c.MultiThreadsConf.StrictModeConf.WorkerNum <= 0 {
+	if c.AnalyzerConf.StrictModeConf.Enable && c.AnalyzerConf.StrictModeConf.WorkerNum <= 0 {
 		return errors.New("invalid max number of workers : ")
+	}
+	// check url route
+	if c.UiConf.Enable {
+		if ok, _ := regexp.Match("[0-9a-zA-Z]+", []byte(c.UiConf.Location)); !ok {
+			return errors.New("invalid route of dashboard :" + c.UiConf.Location)
+		}
 	}
 	return nil
 }

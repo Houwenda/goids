@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/google/gopacket"
+	"goids/alarm"
 	"goids/analyzer"
 	"goids/config"
 	"log"
 	"os"
+	"runtime"
 )
 
 var (
 	LogLevels       = []string{"debug", "alert", "record"}
 	PktRulesList    = make([]analyzer.PktRule, 0)
 	StreamRulesList = make([]analyzer.StreamRule, 0)
+	Conf            config.Config
 )
 
 func init() {
@@ -27,8 +31,8 @@ func init() {
 	fmt.Println("reading config from " + configPath)
 
 	// parse config
-	var c config.Config
-	Conf, err := c.Parse(configPath)
+	//var c config.Config
+	Conf, err := Conf.Parse(configPath)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -36,47 +40,66 @@ func init() {
 	log.Println(Conf.UiConf)
 	log.Println(Conf.RulesConf)
 	log.Println(Conf.LogConf)
-	log.Println(Conf.MultiThreadsConf)
+	log.Println(Conf.AnalyzerConf)
 	log.Println(Conf.AlarmConf)
-	if err = c.Validate(LogLevels); err != nil {
+	if err = Conf.Validate(LogLevels); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
 	// create logger
-	logFile, logError := os.OpenFile(c.LogConf.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if Conf.LogConf.Level == "debug" { // remove past log file
+		if err := os.Remove(Conf.LogConf.Path); err != nil {
+			fmt.Println("error removing past log file at " + Conf.LogConf.Path)
+			os.Exit(1)
+		}
+	}
+	logFile, logError := os.OpenFile(Conf.LogConf.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if logError != nil {
-		fmt.Println("unable to open or create log file at " + c.LogConf.Path)
+		fmt.Println("unable to open or create log file at " + Conf.LogConf.Path)
 		os.Exit(1)
 	}
 	log.SetOutput(logFile)
 	log.Println("logging starts")
 
 	// TODO: parse rules
-	for _, ruleFile := range c.RulesConf.PktRules {
+	for _, ruleFile := range Conf.RulesConf.PktRules {
 		if err := analyzer.ParsePktRules(ruleFile, PktRulesList); err != nil {
 			fmt.Println("error parsing rules file " + ruleFile)
 			log.Fatal("error parsing rules file " + ruleFile)
-			os.Exit(1)
 		}
 	}
-	for _, ruleFile := range c.RulesConf.StreamRules {
+	for _, ruleFile := range Conf.RulesConf.StreamRules {
 		if err := analyzer.ParseStreamRules(ruleFile, StreamRulesList); err != nil {
 			fmt.Println("error parsing rules file " + ruleFile)
 			log.Fatal("error parsing rules file " + ruleFile)
-			os.Exit(1)
 		}
 	}
 
+	// set max proc
+	runtime.GOMAXPROCS(int(Conf.AnalyzerConf.MaxProc))
 }
 
 func main() {
 	fmt.Println("------- goids -------")
+
+	alarmChannel := make(chan analyzer.Incident)
+	packetChannel := make(chan gopacket.Packet, 100)
+
 	// start http server
 
 	// start alarm module
+	alarm.Alarm(alarmChannel)
 
 	// start analyzer module
+	analyzer.Analyze(Conf.AnalyzerConf.StrictModeConf.Enable,
+		Conf.AnalyzerConf.GroupNum,
+		Conf.AnalyzerConf.StrictModeConf.WorkerNum,
+		packetChannel,
+		alarmChannel,
+		PktRulesList,
+		StreamRulesList)
 
 	// start capturing packets
+	analyzer.Watch(Conf.AnalyzerConf.Interfaces, packetChannel)
 }

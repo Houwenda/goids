@@ -6,12 +6,13 @@ ui:
 rules:
     pkt_rules: ["/home/hwd/go/src/goids/config/pkt_rules.rules"]
     stream_rules: ["/home/hwd/go/src/goids/config/stream_rules.rules"]
-multi_threads:
+analyzer:
     max_proc: 3
+    group_num: 2
     strict_mode:
         enable: true
-        group_num: 2
         worker_num: 2
+    interfaces: ["wlan0"]
 log:
     path: "/home/hwd/Desktop/goids.log"
     level: "debug"
