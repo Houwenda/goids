@@ -33,11 +33,11 @@ func init() {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	fmt.Println(Conf.UiConf)
-	fmt.Println(Conf.RulesConf)
-	fmt.Println(Conf.LogConf)
-	fmt.Println(Conf.MultiThreadsConf)
-	fmt.Println(Conf.AlarmConf)
+	log.Println(Conf.UiConf)
+	log.Println(Conf.RulesConf)
+	log.Println(Conf.LogConf)
+	log.Println(Conf.MultiThreadsConf)
+	log.Println(Conf.AlarmConf)
 	if err = c.Validate(LogLevels); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

@@ -4,9 +4,9 @@ type PktRule struct {
 	Action         string
 	Protocol       string
 	Source         string
-	SourcePort     int32
-	Target         string
-	TargetPort     int32
+	SrcPort        int32
+	Destination    string
+	DstPort        int32
 	Message        string
 	Flow           []string
 	Detection      []DetectionRule
