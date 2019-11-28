@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"time"
 )
 
 var (
@@ -89,10 +90,10 @@ func main() {
 	// start http server
 
 	// start alarm module
-	alarm.Alarm(alarmChannel)
+	go alarm.Alarm(alarmChannel, Conf.AlarmConf)
 
 	// start analyzer module
-	analyzer.Analyze(Conf.AnalyzerConf.StrictModeConf.Enable,
+	go analyzer.Analyze(Conf.AnalyzerConf.StrictModeConf.Enable,
 		Conf.AnalyzerConf.GroupNum,
 		Conf.AnalyzerConf.StrictModeConf.WorkerNum,
 		packetChannel,
@@ -100,6 +101,20 @@ func main() {
 		PktRulesList,
 		StreamRulesList)
 
+	// test
+	time.Sleep(10 * time.Second)
+	i := analyzer.Incident{
+		Time:        time.Time{},
+		Description: "",
+		Detail: struct {
+			Type   string
+			Rule   analyzer.PktRule
+			Packet gopacket.Packet
+		}{},
+	}
+	alarmChannel <- i
+
 	// start capturing packets
 	analyzer.Watch(Conf.AnalyzerConf.Interfaces, packetChannel)
+
 }

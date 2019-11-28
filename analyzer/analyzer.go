@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"github.com/google/gopacket"
+	"log"
 	"time"
 )
 
@@ -16,8 +17,9 @@ type Incident struct {
 	Time        time.Time
 	Description string
 	Detail      struct {
-		Type string
-		Rule PktRule // TODO: create a Rule struct compatible with pktRule and streamRule
+		Type   string
+		Rule   PktRule // TODO: create a Rule struct compatible with pktRule and streamRule
+		Packet gopacket.Packet
 	}
 }
 
@@ -31,6 +33,10 @@ type Incident struct {
 * There are several Workers in each group, they try
 * to get this packet continuously.
 *
+* Concurrent Mode :
+* Start a new group of goroutines when Analyze
+* receives a packet from Watcher
+*
 ******************************************************/
 func Analyze(strict bool,
 	groupNum int32,
@@ -40,6 +46,8 @@ func Analyze(strict bool,
 	pktRulesList []PktRule,
 	streamRuleList []StreamRule) {
 
+	fmt.Println("analyze starts")
+
 	// TODO: stream analyzer
 
 	AlarmChannel = alarmChannel
@@ -48,6 +56,8 @@ func Analyze(strict bool,
 	// 	packet analyzer
 	// strict mode
 	if strict {
+		fmt.Println("Analyze works in strict mode")
+		log.Println("Analyze works in strict mode")
 		// spawn workers
 		StrictAnalyze(groupNum, workerNum, pktRulesList)
 
@@ -57,8 +67,9 @@ func Analyze(strict bool,
 				pktChannel <- &pkt
 			}
 		}
-	} else {
-		// concurrent mode
+	} else { // concurrent mode
+		fmt.Println("Analyze works in concurrent mode")
+		log.Println("Analyze works in concurrent mode")
 		//ConcurrentAnalyze(groupNum, pktRulesList)
 		for pkt := range packetChannel {
 			//for _, ch := range groupPacketChannel {
@@ -81,6 +92,7 @@ func StrictAnalyze(groupNum int32, workerNum int32, pktRulesList []PktRule) {
 		for j := 0; j < int(workerNum); j++ {
 			go PacketAnalyzeWorker(pktChannel, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 		}
+		log.Printf("PacketAnalyzerGroup %d \n", i)
 	}
 }
 
@@ -92,6 +104,7 @@ func ConcurrentAnalyze(groupNum int32, pktRuleList []PktRule) {
 }
 
 func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRule) {
+	log.Println("PacketAnalyzeWorker starts")
 	for {
 		packet := *<-pktChannel
 		fmt.Println(packet)

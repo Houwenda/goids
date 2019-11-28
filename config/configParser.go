@@ -47,8 +47,15 @@ type Mail struct {
 }
 
 type Alarm struct {
-	MailConf Mail     `yaml:"mail"`
-	Scripts  []string `yaml:"scripts,flow"`
+	MailConf     Mail     `yaml:"mail"`
+	Scripts      []string `yaml:"scripts,flow"`
+	JsonFileConf JsonFile `yaml:"json_file"`
+}
+
+type JsonFile struct {
+	Enable bool   `yaml:"enable"`
+	Level  string `yaml:"level"`
+	Path   string `yaml:"path"`
 }
 
 type Config struct {

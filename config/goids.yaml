@@ -10,11 +10,12 @@ analyzer:
     max_proc: 3
     group_num: 2
     strict_mode:
-        enable: true
+        enable: false
         worker_num: 2
     interfaces: ["wlan0"]
 log:
-    path: "/home/hwd/Desktop/goids.log"
+    # level: debug, production
+    path: "/home/hwd/Desktop/goids/goids.log"
     level: "debug"
 alarm:
     mail:
@@ -24,6 +25,11 @@ alarm:
         username: "houwd123@yeah.net"
         auth_key: "cilin123"
         receivers: ["799973244@qq.com"]
+    json_file:
+        # level: log alert
+        enable: true
+        level: log
+        path: "/home/hwd/Desktop/goids/json_file.log"
     scripts: []
 
 
