@@ -58,8 +58,19 @@ func Analyze(strict bool,
 			}
 		}
 	} else {
-		// TODO: concurrent analyze mode
-		ConcurrentAnalyze(groupNum, pktRulesList)
+		// concurrent mode
+		//ConcurrentAnalyze(groupNum, pktRulesList)
+		for pkt := range packetChannel {
+			//for _, ch := range groupPacketChannel {
+			//	ch <- &pkt
+			//}
+			//for i := 0; i < int(groupNum); i++ {
+			//	go PacketAnalyzeWorker(groupPacketChannel[i], pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
+			//}
+			for i := 0; i < int(groupNum); i++ {
+				go PacketAnalyzeProc(&pkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
+			}
+		}
 	}
 }
 
@@ -85,4 +96,8 @@ func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRul
 		packet := *<-pktChannel
 		fmt.Println(packet)
 	}
+}
+
+func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
+
 }
