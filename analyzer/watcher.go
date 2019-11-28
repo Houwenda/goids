@@ -1,10 +1,42 @@
 package analyzer
 
 import (
+	"fmt"
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/pcap"
+	"log"
 	"time"
 )
 
+var (
+	snaplen int32         = 1024
+	promisc bool          = false
+	timeout time.Duration = 30 * time.Second
+)
+
 func Watch(interfaces []string, packetChannel chan<- gopacket.Packet) {
-	time.Sleep(60 * time.Second)
+	fmt.Println("capturing packets starts")
+
+	for _, device := range interfaces {
+		handle, err := pcap.OpenLive(device, snaplen, promisc, timeout)
+		if err != nil {
+			log.Println("Unable to access device : " + device)
+			log.Println(err.Error())
+			fmt.Println("Unable to access device : " + device)
+			panic("Unable to access device : " + device)
+		}
+		log.Println("start capturing packets from " + device)
+		go Capture(handle, packetChannel)
+	}
+
+	// test
+	time.Sleep(100 * time.Second)
+}
+
+func Capture(handle *pcap.Handle, packetChannel chan<- gopacket.Packet) {
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	fmt.Println(packetSource)
+	for packet := range packetSource.Packets() {
+		packetChannel <- packet
+	}
 }

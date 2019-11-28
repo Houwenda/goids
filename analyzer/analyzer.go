@@ -72,6 +72,7 @@ func Analyze(strict bool,
 		log.Println("Analyze works in concurrent mode")
 		//ConcurrentAnalyze(groupNum, pktRulesList)
 		for pkt := range packetChannel {
+			fmt.Println(pkt)
 			//for _, ch := range groupPacketChannel {
 			//	ch <- &pkt
 			//}
@@ -106,11 +107,12 @@ func ConcurrentAnalyze(groupNum int32, pktRuleList []PktRule) {
 func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRule) {
 	log.Println("PacketAnalyzeWorker starts")
 	for {
-		packet := *<-pktChannel
+		packet := <-pktChannel
 		fmt.Println(packet)
+		PacketAnalyzeProc(packet, pktRulesList)
 	}
 }
 
 func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
-
+	fmt.Println(pkt)
 }

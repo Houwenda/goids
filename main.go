@@ -8,8 +8,8 @@ import (
 	"goids/config"
 	"log"
 	"os"
+	"os/user"
 	"runtime"
-	"time"
 )
 
 var (
@@ -20,6 +20,20 @@ var (
 )
 
 func init() {
+
+	// user check
+	if runtime.GOOS == "linux" {
+		user, err := user.Current()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		if user.Username != "root" {
+			fmt.Println("ERROR: Current user is not root. Goids needs root privilege to capture packets. ")
+			os.Exit(1)
+		}
+	} else if runtime.GOOS == "windows" {
+
+	}
 
 	// get config file path from command line
 	var configPath string
@@ -85,7 +99,7 @@ func main() {
 	fmt.Println("------- goids -------")
 
 	alarmChannel := make(chan analyzer.Incident)
-	packetChannel := make(chan gopacket.Packet, 100)
+	packetChannel := make(chan gopacket.Packet)
 
 	// start http server
 
@@ -100,19 +114,6 @@ func main() {
 		alarmChannel,
 		PktRulesList,
 		StreamRulesList)
-
-	// test
-	time.Sleep(10 * time.Second)
-	i := analyzer.Incident{
-		Time:        time.Time{},
-		Description: "",
-		Detail: struct {
-			Type   string
-			Rule   analyzer.PktRule
-			Packet gopacket.Packet
-		}{},
-	}
-	alarmChannel <- i
 
 	// start capturing packets
 	analyzer.Watch(Conf.AnalyzerConf.Interfaces, packetChannel)
