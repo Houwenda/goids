@@ -4,13 +4,13 @@ ui:
     port: 3690
     location: "abcd"
 rules:
-    pkt_rules: ["/home/hwd/go/src/goids/config/pkt_rules.rules"]
+    pkt_rules: ["/home/hwd/go/src/goids/config/pkt_rules.rules", "/home/hwd/go/src/goids/config/pkt_rules1.rules"]
     stream_rules: ["/home/hwd/go/src/goids/config/stream_rules.rules"]
 analyzer:
-    max_proc: 3
+    max_proc: 4
     group_num: 2
     strict_mode:
-        enable: false
+        enable: true
         worker_num: 2
     interfaces: ["wlan0"]
 log:

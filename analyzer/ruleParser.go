@@ -9,23 +9,23 @@ import (
 )
 
 // parse packet rules from file
-func ParsePktRules(file string, PktRulesList []PktRule) error {
+func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 	ruleFile, fileErr := os.Open(file)
 	if fileErr != nil {
 		log.Println(fileErr.Error())
-		return fileErr
+		return PktRulesList, fileErr
 	}
 	defer ruleFile.Close()
 
 	ruleRegex, err := regexp.Compile(`^alert (tcp)|(udp)|(icmp) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \( msg:"[^"]+"; flow:[^;]+; file_data;( [^:]+:[^;]+;)+ metadata:[^;]+; classtype:[^;]+; sid:\d{1,6}; rev:\d{1,2};\)`)
 	if err != nil {
 		log.Println(fileErr.Error())
-		return err
+		return PktRulesList, err
 	}
 	ruleRegex, err = regexp.Compile(`((alert)|(log)) ((tcp)|(udp)|(icmp)) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((any)|(\d{1,5})) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \(msg:"[^"]+";( flow:[^;]+)?;( file_data;)?(( [^:]+:[^;]+;)|( [ -~]+;))+( metadata:[^;]+;)?( reference:[^;]+;)*( classtype:[^;]+;)?( sid:\d{1,6};)?( rev:\d{1,2};)?\)`)
 	if err != nil {
 		log.Println(fileErr.Error())
-		return err
+		return PktRulesList, err
 	}
 
 	reader := bufio.NewReader(ruleFile)
@@ -43,10 +43,13 @@ func ParsePktRules(file string, PktRulesList []PktRule) error {
 			log.Println("invalid rule syntax at ", inputStringByte)
 		}
 		// TODO: parse rule
+		tmpRule := PktRule{Action: file, Protocol: inputString} // test
+
+		PktRulesList = append(PktRulesList, tmpRule)
 	}
 	log.Printf("parsing from %s finished \n", file)
 
-	return nil
+	return PktRulesList, nil
 }
 
 // parse packet rules from file

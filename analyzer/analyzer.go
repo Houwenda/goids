@@ -53,7 +53,7 @@ func Analyze(strict bool,
 	AlarmChannel = alarmChannel
 	rulesPerGroup = len(pktRulesList) / int(groupNum)
 
-	// 	packet analyzer
+	// packet analyzer
 	// strict mode
 	if strict {
 		fmt.Println("Analyze works in strict mode")
@@ -64,6 +64,7 @@ func Analyze(strict bool,
 		// start omitting packets to each group
 		for pkt := range packetChannel {
 			for _, pktChannel := range groupPacketChannel {
+				//fmt.Printf("pkt sent to group %d \n", i)
 				pktChannel <- &pkt
 			}
 		}
@@ -72,7 +73,6 @@ func Analyze(strict bool,
 		log.Println("Analyze works in concurrent mode")
 		//ConcurrentAnalyze(groupNum, pktRulesList)
 		for pkt := range packetChannel {
-			fmt.Println(pkt)
 			//for _, ch := range groupPacketChannel {
 			//	ch <- &pkt
 			//}
@@ -80,6 +80,7 @@ func Analyze(strict bool,
 			//	go PacketAnalyzeWorker(groupPacketChannel[i], pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			//}
 			for i := 0; i < int(groupNum); i++ {
+				//fmt.Printf("pkt sent to group %d \n", i)
 				go PacketAnalyzeProc(&pkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			}
 		}
@@ -108,11 +109,10 @@ func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRul
 	log.Println("PacketAnalyzeWorker starts")
 	for {
 		packet := <-pktChannel
-		fmt.Println(packet)
 		PacketAnalyzeProc(packet, pktRulesList)
 	}
 }
 
 func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
-	fmt.Println(pkt)
+	fmt.Println(*pkt)
 }

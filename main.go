@@ -79,7 +79,8 @@ func init() {
 
 	// TODO: parse rules
 	for _, ruleFile := range Conf.RulesConf.PktRules {
-		if err := analyzer.ParsePktRules(ruleFile, PktRulesList); err != nil {
+		PktRulesList, err = analyzer.ParsePktRules(ruleFile, PktRulesList)
+		if err != nil {
 			fmt.Println("error parsing rules file " + ruleFile)
 			log.Fatal("error parsing rules file " + ruleFile)
 		}
