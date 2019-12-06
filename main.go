@@ -6,6 +6,7 @@ import (
 	"goids/alarm"
 	"goids/analyzer"
 	"goids/config"
+	"goids/wui"
 	"log"
 	"os"
 	"os/user"
@@ -103,7 +104,9 @@ func main() {
 	packetChannel := make(chan gopacket.Packet)
 
 	// start http server
-
+	if Conf.UiConf.Enable {
+		go wui.Wui(Conf.UiConf)
+	}
 	// start alarm module
 	go alarm.Alarm(alarmChannel, Conf.AlarmConf)
 

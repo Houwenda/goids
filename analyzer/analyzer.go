@@ -114,5 +114,5 @@ func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRul
 }
 
 func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
-	fmt.Println(*pkt)
+	//fmt.Println(*pkt)
 }

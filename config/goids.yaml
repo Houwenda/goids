@@ -1,5 +1,5 @@
 ui:
-    enable: false
+    enable: true
     ip: "localhost"
     port: 3690
     location: "abcd"
