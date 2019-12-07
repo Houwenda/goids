@@ -11,7 +11,7 @@ import (
 var (
 	snaplen int32         = 1024
 	promisc bool          = false
-	timeout time.Duration = 30 * time.Second
+	timeout time.Duration = -1 * time.Second
 )
 
 func Watch(interfaces []string, packetChannel chan<- gopacket.Packet) {
@@ -37,6 +37,7 @@ func Capture(handle *pcap.Handle, packetChannel chan<- gopacket.Packet) {
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
 		//fmt.Println("into packetChannel : ", packet)
+		packet.ApplicationLayer()
 		packetChannel <- packet
 	}
 }

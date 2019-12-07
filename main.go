@@ -70,12 +70,14 @@ func init() {
 			os.Exit(1)
 		}
 	}
+
 	logFile, logError := os.OpenFile(Conf.LogConf.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if logError != nil {
 		fmt.Println("unable to open or create log file at " + Conf.LogConf.Path)
 		os.Exit(1)
 	}
 	log.SetOutput(logFile)
+	//log.SetOutput(os.Stdout) // test
 	log.Println("logging starts")
 
 	// TODO: parse rules

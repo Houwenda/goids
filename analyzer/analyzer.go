@@ -1,9 +1,12 @@
 package analyzer
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"log"
+	"os"
 	"time"
 )
 
@@ -80,9 +83,10 @@ func Analyze(strict bool,
 			//for i := 0; i < int(groupNum); i++ {
 			//	go PacketAnalyzeWorker(groupPacketChannel[i], pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			//}
+			tmpPkt := pkt
 			for i := 0; i < int(groupNum); i++ {
 				//fmt.Printf("pkt sent to group %d \n", i)
-				go PacketAnalyzeProc(&pkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
+				go PacketAnalyzeProc(&tmpPkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			}
 		}
 	}
@@ -108,12 +112,68 @@ func ConcurrentAnalyze(groupNum int32, pktRuleList []PktRule) {
 
 func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRule) {
 	log.Println("PacketAnalyzeWorker starts")
+	fmt.Println("PacketAnalyzeWorker starts", time.Now().Format(time.RFC3339Nano))
 	for {
 		packet := <-pktChannel
 		PacketAnalyzeProc(packet, pktRulesList)
+		os.Stdout.Sync()
 	}
 }
 
 func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 	//fmt.Println(*pkt)
+	packet := *pkt
+	if err := packet.ErrorLayer(); err != nil {
+		log.Println("Error decoding some part of the packet:", err)
+	}
+	/*
+		if netw := packet.NetworkLayer(); netw != nil {
+			if netw.LayerType() == layers.LayerTypeIPv4 {
+				ipv4 := netw.(*layers.IPv4)
+				fmt.Println("IPv4 : from", ipv4.SrcIP, " to", ipv4.DstIP)
+			} else if netw.LayerType() == layers.LayerTypeIPv6 {
+				ipv6 := netw.(*layers.IPv6)
+				fmt.Println("IPv6 : from", ipv6.SrcIP, " to", ipv6.DstIP)
+			}
+		}
+		if trans := packet.TransportLayer(); trans != nil {
+			if trans.LayerType() == layers.LayerTypeTCP {
+				fmt.Println("TCP", len(trans.(*layers.TCP).Payload), ": \n", hex.Dump(trans.(*layers.TCP).Payload))
+			} else if trans.LayerType() == layers.LayerTypeUDP {
+				fmt.Println("UDP : \n", hex.Dump(trans.(*layers.UDP).Payload))
+			}
+		}
+		if app := packet.ApplicationLayer(); app != nil {
+			//log.Println(hex.Dump(app.Payload()))
+		}
+	*/
+	for _, tmpLayer := range packet.Layers() {
+		switch tmpLayer.LayerType() {
+		case layers.LayerTypeIPv4:
+			ipv4 := tmpLayer.(*layers.IPv4)
+			fmt.Println("IPv4 : from", ipv4.SrcIP, " to", ipv4.DstIP)
+		case layers.LayerTypeIPv6:
+			ipv6 := tmpLayer.(*layers.IPv6)
+			fmt.Println("IPv6 : from", ipv6.SrcIP, " to", ipv6.DstIP)
+		case layers.LayerTypeICMPv4:
+			icmpv4 := tmpLayer.(*layers.ICMPv4)
+			fmt.Println("ICMPv4 : ", hex.Dump(icmpv4.Payload))
+		case layers.LayerTypeICMPv6:
+			icmpv6 := tmpLayer.(*layers.ICMPv6)
+			fmt.Println("ICMPv6 : ", hex.Dump(icmpv6.Payload))
+		case layers.LayerTypeTCP:
+			tcp := tmpLayer.(*layers.TCP)
+			fmt.Println("TCP : from ", tcp.SrcPort, " to", tcp.DstPort, hex.Dump(tcp.Payload))
+		case layers.LayerTypeUDP:
+			udp := tmpLayer.(*layers.UDP)
+			fmt.Println("TCP : from ", udp.SrcPort, " to", udp.DstPort, hex.Dump(udp.Payload))
+		case layers.LayerTypeEthernet:
+			ethernet := tmpLayer.(*layers.Ethernet)
+			fmt.Println("Ethernet : from ", ethernet.SrcMAC, " to", ethernet.DstMAC)
+		default:
+			fmt.Println("other layer : ", tmpLayer.LayerType())
+		}
+
+	}
+	fmt.Println()
 }
