@@ -46,7 +46,7 @@ func Analyze(strict bool,
 	pktRulesList []PktRule,
 	streamRuleList []StreamRule) {
 
-	fmt.Println("analyze starts")
+	//fmt.Println("analyze starts")
 
 	// TODO: stream analyzer
 
@@ -56,21 +56,22 @@ func Analyze(strict bool,
 	// packet analyzer
 	// strict mode
 	if strict {
-		fmt.Println("Analyze works in strict mode")
-		log.Println("Analyze works in strict mode")
+		fmt.Println("analyzer works in strict mode")
+		log.Println("analyzer works in strict mode")
 		// spawn workers
 		StrictAnalyze(groupNum, workerNum, pktRulesList)
+		//fmt.Println("groupPacketChannel : ", groupPacketChannel)
 
-		// start omitting packets to each group
+		// start emitting packets to each group
 		for pkt := range packetChannel {
+			tmpPkt := pkt
 			for _, pktChannel := range groupPacketChannel {
-				//fmt.Printf("pkt sent to group %d \n", i)
-				pktChannel <- &pkt
+				pktChannel <- &tmpPkt
 			}
 		}
 	} else { // concurrent mode
-		fmt.Println("Analyze works in concurrent mode")
-		log.Println("Analyze works in concurrent mode")
+		fmt.Println("analyzer works in concurrent mode")
+		log.Println("analyzer works in concurrent mode")
 		//ConcurrentAnalyze(groupNum, pktRulesList)
 		for pkt := range packetChannel {
 			//for _, ch := range groupPacketChannel {

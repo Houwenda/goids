@@ -8,10 +8,10 @@ rules:
     stream_rules: ["/home/hwd/go/src/goids/config/stream_rules.rules"]
 analyzer:
     max_proc: 4
-    group_num: 2
+    group_num: 1
     strict_mode:
         enable: true
-        worker_num: 2
+        worker_num: 1
     interfaces: ["wlan0"]
 log:
     # level: debug, production

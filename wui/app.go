@@ -11,8 +11,6 @@ import (
 )
 
 func Wui(config config.Ui) {
-	fmt.Println("wui starts")
-
 	staticFiles := packr.NewBox("./resources")
 	router := mux.NewRouter()
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(staticFiles)))

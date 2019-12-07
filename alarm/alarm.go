@@ -11,8 +11,8 @@ import (
 var IncidentChannel []chan analyzer.Incident
 
 func Alarm(alarmChannel chan analyzer.Incident, alarmConf config.Alarm) {
-	fmt.Println("alarm starts")
-	log.Println("alarm starts")
+	fmt.Println("alarmer starts")
+	log.Println("alarmer starts")
 
 	// mail alert
 	if alarmConf.MailConf.Enable {
