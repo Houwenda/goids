@@ -15,7 +15,7 @@ type PktRule struct {
 	}
 	Message        string
 	Flow           []string
-	Detection      []DetectionRule
+	Detection      DetectionRule
 	Metadata       []string
 	Reference      []string
 	Classification string
@@ -26,9 +26,12 @@ type PktRule struct {
 }
 
 type DetectionRule struct {
-	Content string
-	Offset  int32
-	Depth   int32
+	Content []struct {
+		content string
+		inverse bool
+	}
+	Offset int32
+	Depth  int32
 }
 
 type StreamRule struct {

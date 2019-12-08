@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"bufio"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -123,10 +124,10 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		// any
 		pktRule.SrcPort.start = 0
 		pktRule.SrcPort.end = 65536
-	} else if result, err := regexp.Match(`\[\d+-\d+\]`, []byte(headerWordList[3])); err == nil && result {
-		// [1-65535] 65535 included / [80-81] 81 included
-		start := headerWordList[3][1:strings.Index(headerWordList[3], "-")]
-		end := headerWordList[3][strings.Index(headerWordList[3], "-")+1 : strings.Index(headerWordList[3], "]")]
+	} else if result, err := regexp.Match(`\d+:\d+`, []byte(headerWordList[3])); err == nil && result {
+		// 1:65535 65535 included / 80:81 81 included
+		start := headerWordList[3][:strings.Index(headerWordList[3], ":")]
+		end := headerWordList[3][strings.Index(headerWordList[3], ":")+1:]
 		startInt, err := strconv.ParseInt(start, 10, 32)
 		if err != nil {
 			return pktRule, err
@@ -167,10 +168,10 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		// any
 		pktRule.DstPort.start = 0
 		pktRule.DstPort.end = 65536
-	} else if result, err := regexp.Match(`\[\d+-\d+\]`, []byte(headerWordList[6])); err == nil && result {
-		// [1-65535] 65535 included / [80-81] 81 included
-		start := headerWordList[6][1:strings.Index(headerWordList[6], "-")]
-		end := headerWordList[6][strings.Index(headerWordList[6], "-")+1 : strings.Index(headerWordList[6], "]")]
+	} else if result, err := regexp.Match(`\d+:\d+`, []byte(headerWordList[6])); err == nil && result {
+		// 1:65535 65535 included / 80:81 81 included
+		start := headerWordList[6][:strings.Index(headerWordList[6], ":")]
+		end := headerWordList[6][strings.Index(headerWordList[6], ":")+1:]
 		startInt, err := strconv.ParseInt(start, 10, 32)
 		if err != nil {
 			return pktRule, err
@@ -189,13 +190,13 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	}
 
 	/**********************************************
-	*                  rule details
+	*                 rule details
 	* msg : description of rule
-	*
-	* classtype : type of activity
-	* refenrence : source of this rule
-	* sid :
-	* rev :
+	* classtype : type of attack activity
+	* reference : source of this rule
+	* sid : identification of the rule
+	* rev : revision number of the rule
+	* metadata : additional information about the rule
 	*
 	***********************************************/
 	detailsPhraseList := strings.Split(strings.TrimSpace(details[1:strings.Index(details, ")")]), ";")
@@ -207,8 +208,87 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			continue
 		}
 		key := detailsPhrase[:tmp]
+		key = strings.Replace(key, " ", "", -1)
 		value := detailsPhrase[tmp+1:]
 		fmt.Println("key :", key, " value :", value)
+
+		// general rule options
+		switch key {
+		case "msg":
+			pktRule.Message = value
+		case "classtype":
+			pktRule.Classification = value
+		case "reference":
+			pktRule.Reference = append(pktRule.Reference, value)
+		case "sid":
+			sidInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				pktRule.SignatureId.Sid = int32(sidInt)
+			}
+		case "rev":
+			revInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				pktRule.SignatureId.Rev = int32(revInt)
+			}
+		case "metadata":
+			pktRule.Metadata = append(pktRule.Metadata, value)
+		}
+
+		// payload detection rule options
+		switch key {
+		case "content":
+			/* examples:
+			* content:!"PE|00 00|XX"
+			* content:"REPEAT"
+			* content:"|00 ab cd|"
+			*
+			* note: only the first part of hex block will be parsed, |ab|PE|00| not supported
+			 */
+			content := struct {
+				content string
+				inverse bool
+			}{}
+
+			if strings.Count(value[:strings.Index(value, "\"")], "!") == 0 {
+				content.inverse = false
+			} else if strings.Count(value[:strings.Index(value, "\"")], "!") == 1 {
+				content.inverse = true
+				value = value[strings.Index(value, "!")+1:]
+			} else {
+				return pktRule, errors.New("invalid content value :" + value)
+			}
+
+			if strings.Count(value, "|") == 0 {
+				content.content = strings.Replace(value, "\"", "", -1)
+				pktRule.Detection.Content = append(pktRule.Detection.Content, content)
+				//pktRule.Detection.Content = append(pktRule.Detection.Content, strings.Replace(value, "\"", "", -1))
+			} else if strings.Count(value, "|") == 2 {
+				front := strings.Replace(value[:strings.Index(value, "|")], "\"", "", 1)
+				middle := strings.Replace(value[strings.Index(value, "|"):strings.LastIndex(value, "|")], "|", "", 1)
+				back := strings.Replace(value[strings.LastIndex(value, "|"):], "\"", "", 1)
+				back = strings.Replace(back, "|", "", 1)
+				//fmt.Println("front :", front, "middle :", middle, "back :", back)
+				resultBytes := []byte(front)
+				for _, b := range strings.Fields(middle) {
+					tmpByte, err := hex.DecodeString(b)
+					if err != nil {
+						return pktRule, errors.New("invalid content :" + value)
+					}
+					resultBytes = append(resultBytes, tmpByte[0])
+				}
+				for i := 0; i < len(back); i++ {
+					resultBytes = append(resultBytes, back[i])
+				}
+				//fmt.Println("resultBytes :", hex.Dump(resultBytes))
+				content.content = string(resultBytes)
+				pktRule.Detection.Content = append(pktRule.Detection.Content, content)
+				//pktRule.Detection.Content = append(pktRule.Detection.Content, string(resultBytes))
+			} else {
+				return pktRule, errors.New("invalid content value : " + value)
+			}
+
+		}
+
 	}
 
 	fmt.Println("pktRule :", pktRule)
