@@ -2,10 +2,15 @@ package analyzer
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 // parse packet rules from file
@@ -17,16 +22,19 @@ func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 	}
 	defer ruleFile.Close()
 
-	ruleRegex, err := regexp.Compile(`^alert (tcp)|(udp)|(icmp) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \( msg:"[^"]+"; flow:[^;]+; file_data;( [^:]+:[^;]+;)+ metadata:[^;]+; classtype:[^;]+; sid:\d{1,6}; rev:\d{1,2};\)`)
-	if err != nil {
-		log.Println(fileErr.Error())
-		return PktRulesList, err
-	}
-	ruleRegex, err = regexp.Compile(`((alert)|(log)) ((tcp)|(udp)|(icmp)) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((any)|(\d{1,5})) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \(msg:"[^"]+";( flow:[^;]+)?;( file_data;)?(( [^:]+:[^;]+;)|( [ -~]+;))+( metadata:[^;]+;)?( reference:[^;]+;)*( classtype:[^;]+;)?( sid:\d{1,6};)?( rev:\d{1,2};)?\)`)
-	if err != nil {
-		log.Println(fileErr.Error())
-		return PktRulesList, err
-	}
+	/*
+		ruleRegex, err := regexp.Compile(`^alert (tcp)|(udp)|(icmp) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \( msg:"[^"]+"; flow:[^;]+; file_data;( [^:]+:[^;]+;)+ metadata:[^;]+; classtype:[^;]+; sid:\d{1,6}; rev:\d{1,2};\)`)
+		if err != nil {
+			log.Println(fileErr.Error())
+			return PktRulesList, err
+		}
+		ruleRegex, err = regexp.Compile(`((alert)|(log)) ((tcp)|(udp)|(icmp)) ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((any)|(\d{1,5})) -> ((1[0-9][0-9]\.)|(2[0-4][0-9]\.)|(25[0-5]\.)|([1-9][0-9]\.)|([0-9]\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9])) ((\d{1,5})|(any)) \(msg:"[^"]+";( flow:[^;]+)?;( file_data;)?(( [^:]+:[^;]+;)|( [ -~]+;))+( metadata:[^;]+;)?( reference:[^;]+;)*( classtype:[^;]+;)?( sid:\d{1,6};)?( rev:\d{1,2};)?\)`)
+		if err != nil {
+			log.Println(fileErr.Error())
+			return PktRulesList, err
+		}
+
+	*/
 
 	reader := bufio.NewReader(ruleFile)
 	for {
@@ -39,11 +47,18 @@ func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 		}
 		inputStringByte := []byte(inputString[:len(inputString)-1])
 		log.Printf("The rule is: %s ", inputStringByte)
-		if !ruleRegex.Match(inputStringByte) {
-			log.Println("invalid rule syntax at ", inputStringByte)
-		}
+		/*
+			if !ruleRegex.Match(inputStringByte) {
+				log.Println("invalid rule syntax at ", inputStringByte)
+			}
+		*/
 		// TODO: parse rule
-		tmpRule := PktRule{Action: file, Protocol: inputString} // test
+		tmpRule, err := parsePacketLine(inputString)
+		if err != nil {
+			fmt.Println(err.Error())
+			return PktRulesList, err
+		}
+		tmpRule = PktRule{Action: file, Protocol: inputString} // test
 
 		PktRulesList = append(PktRulesList, tmpRule)
 	}
@@ -56,4 +71,121 @@ func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 func ParseStreamRules(file string, StreamRulesList []StreamRule) error {
 
 	return nil
+}
+
+func parsePacketLine(inputString string) (PktRule, error) {
+	var pktRule PktRule
+	tmp := strings.Index(inputString, "(")
+	header := inputString[:tmp]
+	details := inputString[tmp:]
+	fmt.Println("details :", details)
+	headerWordList := strings.Fields(strings.TrimSpace(header))
+	fmt.Println("headerWordList :", headerWordList)
+
+	// action
+	if headerWordList[0] == "log" || headerWordList[0] == "alert" || headerWordList[0] == "stream" {
+		pktRule.Action = headerWordList[0]
+	} else {
+		return pktRule, errors.New("action error")
+	}
+
+	// protocol
+	if headerWordList[1] == "tcp" || headerWordList[1] == "udp" || headerWordList[1] == "icmp" {
+		pktRule.Protocol = headerWordList[1]
+	} else {
+		return pktRule, errors.New("protocol error")
+	}
+
+	// source
+	if ip, err := parseIP(headerWordList[2]); err == nil {
+		pktRule.Source = ip
+	} else {
+		return pktRule, errors.New("source error")
+	}
+
+	// srcPort
+	if srcPort, err := strconv.ParseInt(headerWordList[3], 10, 32); err == nil && srcPort > 0 && srcPort < 65536 {
+		// 80 / 22 / ...
+		pktRule.SrcPort.start = int32(srcPort)
+		pktRule.SrcPort.end = int32(srcPort) + 1
+	} else if headerWordList[3] == "any" {
+		// any
+		pktRule.SrcPort.start = 0
+		pktRule.SrcPort.end = 65536
+	} else if result, err := regexp.Match(`\[\d+-\d+\]`, []byte(headerWordList[3])); err == nil && result {
+		// [1-65535] 65535 included / [80-81] 81 included
+		start := headerWordList[3][1:strings.Index(headerWordList[3], "-")]
+		end := headerWordList[3][strings.Index(headerWordList[3], "-")+1 : strings.Index(headerWordList[3], "]")]
+		startInt, err := strconv.ParseInt(start, 10, 32)
+		if err != nil {
+			return pktRule, err
+		}
+		endInt, err := strconv.ParseInt(end, 10, 32)
+		if err != nil {
+			return pktRule, err
+		}
+		if startInt >= endInt {
+			return pktRule, errors.New("srcPort start greater than end")
+		}
+		pktRule.SrcPort.start = int32(startInt)
+		pktRule.SrcPort.end = int32(endInt) + 1
+	} else {
+		return pktRule, errors.New("srcPort error")
+	}
+
+	// ->
+	if headerWordList[4] != "->" {
+		return pktRule, errors.New("-> not found in valid position")
+	}
+
+	// destination
+	if ip, err := parseIP(headerWordList[5]); err == nil {
+		pktRule.Destination = ip
+	} else {
+		return pktRule, errors.New("destination error")
+	}
+
+	// dstPort
+	if dstPort, err := strconv.ParseInt(headerWordList[6], 10, 32); err == nil && dstPort > 0 && dstPort < 65536 {
+		// 80 / 22 / ...
+		pktRule.DstPort.start = int32(dstPort)
+		pktRule.DstPort.end = int32(dstPort)
+	} else if headerWordList[6] == "any" {
+		// any
+		pktRule.DstPort.start = 0
+		pktRule.DstPort.end = 65536
+	} else if result, err := regexp.Match(`\[\d+-\d+\]`, []byte(headerWordList[6])); err == nil && result {
+		// [1-65535] 65535 included / [80-81] 81 included
+		start := headerWordList[6][1:strings.Index(headerWordList[6], "-")]
+		end := headerWordList[6][strings.Index(headerWordList[6], "-")+1 : strings.Index(headerWordList[6], "]")]
+		startInt, err := strconv.ParseInt(start, 10, 32)
+		if err != nil {
+			return pktRule, err
+		}
+		endInt, err := strconv.ParseInt(end, 10, 32)
+		if err != nil {
+			return pktRule, err
+		}
+		if startInt >= endInt {
+			return pktRule, errors.New("dstPort start greater than end")
+		}
+		pktRule.DstPort.start = int32(startInt)
+		pktRule.DstPort.end = int32(endInt) + 1
+	} else {
+		return pktRule, errors.New("dstPort error")
+	}
+
+	fmt.Println("pktRule :", pktRule)
+	return pktRule, nil
+}
+
+func parseIP(inputString string) (net.IP, error) {
+	ip := net.ParseIP(inputString)
+	if ip.To4() != nil {
+		return ip, nil
+	} else if ip.To16() != nil {
+		return ip, nil
+	} else {
+		return nil, errors.New("invalid ip")
+	}
 }

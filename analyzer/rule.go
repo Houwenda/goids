@@ -1,12 +1,20 @@
 package analyzer
 
+import "net"
+
 type PktRule struct {
-	Action         string
-	Protocol       string
-	Source         string
-	SrcPort        int32
-	Destination    string
-	DstPort        int32
+	Action   string
+	Protocol string
+	Source   net.IP
+	SrcPort  struct {
+		start int32
+		end   int32
+	}
+	Destination net.IP
+	DstPort     struct {
+		start int32
+		end   int32
+	}
 	Message        string
 	Flow           []string
 	Detection      []DetectionRule

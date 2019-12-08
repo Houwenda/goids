@@ -31,5 +31,3 @@ alarm:
         level: log
         path: "/home/hwd/Desktop/goids/json_file.log"
     scripts: []
-
-

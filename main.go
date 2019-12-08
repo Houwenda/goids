@@ -101,7 +101,7 @@ func init() {
 
 func main() {
 	fmt.Println("------- goids -------")
-
+	return
 	alarmChannel := make(chan analyzer.Incident)
 	packetChannel := make(chan gopacket.Packet)
 

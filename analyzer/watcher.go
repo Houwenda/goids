@@ -37,7 +37,6 @@ func Capture(handle *pcap.Handle, packetChannel chan<- gopacket.Packet) {
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
 		//fmt.Println("into packetChannel : ", packet)
-		packet.ApplicationLayer()
 		packetChannel <- packet
 	}
 }

@@ -111,8 +111,7 @@ func ConcurrentAnalyze(groupNum int32, pktRuleList []PktRule) {
 }
 
 func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRule) {
-	log.Println("PacketAnalyzeWorker starts")
-	fmt.Println("PacketAnalyzeWorker starts", time.Now().Format(time.RFC3339Nano))
+	log.Println("PacketAnalyzeWorker starts", time.Now().Format(time.RFC3339Nano))
 	for {
 		packet := <-pktChannel
 		PacketAnalyzeProc(packet, pktRulesList)
