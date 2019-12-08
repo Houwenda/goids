@@ -1,16 +1,14 @@
 package analyzer
 
-import "net"
-
 type PktRule struct {
 	Action   string
 	Protocol string
-	Source   net.IP
+	Source   string // can be ipv4, ipv6, "any"
 	SrcPort  struct {
 		start int32
 		end   int32
 	}
-	Destination net.IP
+	Destination string // can be ipv4, ipv6, "any"
 	DstPort     struct {
 		start int32
 		end   int32

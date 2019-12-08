@@ -3,6 +3,7 @@ ui:
     ip: "localhost"
     port: 3690
     location: "abcd"
+    db_path: "/home/hwd/Desktop/goids/db.csv"
 rules:
     pkt_rules: ["/home/hwd/go/src/goids/config/pkt_rules.rules", "/home/hwd/go/src/goids/config/pkt_rules1.rules"]
     stream_rules: ["/home/hwd/go/src/goids/config/stream_rules.rules"]
@@ -29,5 +30,6 @@ alarm:
         # level: log alert
         enable: true
         level: log
-        path: "/home/hwd/Desktop/goids/json_file.log"
+        path: "/home/hwd/Desktop/goids/json_log.json"
     scripts: []
+    db_path: "/home/hwd/Desktop/goids/db.csv"

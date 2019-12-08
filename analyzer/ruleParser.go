@@ -80,7 +80,16 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	details := inputString[tmp:]
 	fmt.Println("details :", details)
 	headerWordList := strings.Fields(strings.TrimSpace(header))
-	fmt.Println("headerWordList :", headerWordList)
+	//fmt.Println("headerWordList :", headerWordList)
+
+	/**************************************************
+	*                  rule header
+	* action : what to do when coming through a packet
+	* protocol : recognize protocol of packet
+	* source/destination : ip address
+	* srcPort/dstPort : port
+	*
+	**************************************************/
 
 	// action
 	if headerWordList[0] == "log" || headerWordList[0] == "alert" || headerWordList[0] == "stream" {
@@ -97,8 +106,10 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	}
 
 	// source
-	if ip, err := parseIP(headerWordList[2]); err == nil {
-		pktRule.Source = ip
+	if _, err := parseIP(headerWordList[2]); err == nil {
+		pktRule.Source = headerWordList[2]
+	} else if headerWordList[2] == "any" {
+		pktRule.Source = "any"
 	} else {
 		return pktRule, errors.New("source error")
 	}
@@ -139,8 +150,10 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	}
 
 	// destination
-	if ip, err := parseIP(headerWordList[5]); err == nil {
-		pktRule.Destination = ip
+	if _, err := parseIP(headerWordList[5]); err == nil {
+		pktRule.Destination = headerWordList[5]
+	} else if headerWordList[5] == "any" {
+		pktRule.Destination = "any"
 	} else {
 		return pktRule, errors.New("destination error")
 	}
@@ -173,6 +186,29 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		pktRule.DstPort.end = int32(endInt) + 1
 	} else {
 		return pktRule, errors.New("dstPort error")
+	}
+
+	/**********************************************
+	*                  rule details
+	* msg : description of rule
+	*
+	* classtype : type of activity
+	* refenrence : source of this rule
+	* sid :
+	* rev :
+	*
+	***********************************************/
+	detailsPhraseList := strings.Split(strings.TrimSpace(details[1:strings.Index(details, ")")]), ";")
+	fmt.Println(detailsPhraseList)
+	for _, detailsPhrase := range detailsPhraseList {
+		tmp := strings.Index(detailsPhrase, ":")
+		if tmp < 0 { // no ":" in phrase
+			fmt.Println(detailsPhrase)
+			continue
+		}
+		key := detailsPhrase[:tmp]
+		value := detailsPhrase[tmp+1:]
+		fmt.Println("key :", key, " value :", value)
 	}
 
 	fmt.Println("pktRule :", pktRule)

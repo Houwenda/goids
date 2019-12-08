@@ -13,6 +13,7 @@ type Ui struct {
 	Ip       string `yaml:"ip"`
 	Port     int32  `yaml:"port"`
 	Location string `yaml:"location"`
+	DbPath   string `yaml:"db_path"`
 }
 
 type Rules struct {
@@ -50,6 +51,7 @@ type Alarm struct {
 	MailConf     Mail     `yaml:"mail"`
 	Scripts      []string `yaml:"scripts,flow"`
 	JsonFileConf JsonFile `yaml:"json_file"`
+	DbPath       string   `yaml:"db_path"`
 }
 
 type JsonFile struct {
@@ -84,7 +86,7 @@ func (c *Config) Parse(path string) (*Config, error) {
 }
 
 func (c *Config) Validate(logLevels []string) error {
-	// check file existence
+	// check rule file existence
 	for _, file := range c.RulesConf.PktRules {
 		if _, existErr := os.Stat(file); existErr != nil && os.IsNotExist(existErr) {
 			return errors.New("packet rule file does not exist at " + file)
@@ -95,11 +97,21 @@ func (c *Config) Validate(logLevels []string) error {
 			return errors.New("stream rule file does not exist at " + file)
 		}
 	}
+	// log file
 	_, logError := os.OpenFile(c.LogConf.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if logError != nil {
 		return errors.New("unable to open or create log file at " + c.LogConf.Path)
 	}
-	// unknown log level
+	// database file
+	_, dbError := os.OpenFile(c.UiConf.DbPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if dbError != nil {
+		return errors.New("unable to open or create database file at " + c.UiConf.DbPath)
+	}
+	_, dError := os.OpenFile(c.AlarmConf.DbPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if dError != nil {
+		return errors.New("unable to open or create database file at " + c.AlarmConf.DbPath)
+	}
+	// validate log level
 	flag := false
 	for _, k := range logLevels {
 		if k == c.LogConf.Level {
@@ -119,8 +131,8 @@ func (c *Config) Validate(logLevels []string) error {
 	if c.AnalyzerConf.StrictModeConf.Enable && c.AnalyzerConf.StrictModeConf.WorkerNum <= 0 {
 		return errors.New("invalid max number of workers : ")
 	}
-	// check url route
 	if c.UiConf.Enable {
+		// check url route
 		if ok, _ := regexp.Match("[0-9a-zA-Z]+", []byte(c.UiConf.Location)); !ok {
 			return errors.New("invalid route of dashboard :" + c.UiConf.Location)
 		}
