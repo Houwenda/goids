@@ -27,11 +27,21 @@ type PktRule struct {
 
 type DetectionRule struct {
 	Content []struct {
+		content  string
+		inverse  bool
+		nocase   bool
+		depth    int32
+		offset   int32
+		distance int32
+		within   int32
+	}
+	ProtectedContent []struct {
 		content string
 		inverse bool
+		offset  int32
+		length  int32
+		hash    string
 	}
-	Offset int32
-	Depth  int32
 }
 
 type StreamRule struct {

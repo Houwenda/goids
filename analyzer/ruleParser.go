@@ -205,6 +205,9 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		tmp := strings.Index(detailsPhrase, ":")
 		if tmp < 0 { // no ":" in phrase
 			fmt.Println(detailsPhrase)
+			if detailsPhrase == "nocase" {
+				pktRule.Detection.Content[len(pktRule.Detection.Content)-1].nocase = true
+			}
 			continue
 		}
 		key := detailsPhrase[:tmp]
@@ -234,8 +237,12 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			pktRule.Metadata = append(pktRule.Metadata, value)
 		}
 
+		// content or protected_content
+		var currentDetectionType string
+
 		// payload detection rule options
 		switch key {
+		// Content
 		case "content":
 			/* examples:
 			* content:!"PE|00 00|XX"
@@ -245,9 +252,15 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			* note: only the first part of hex block will be parsed, |ab|PE|00| not supported
 			 */
 			content := struct {
-				content string
-				inverse bool
+				content  string
+				inverse  bool
+				nocase   bool
+				depth    int32
+				offset   int32
+				distance int32
+				within   int32
 			}{}
+			content.nocase = false
 
 			if strings.Count(value[:strings.Index(value, "\"")], "!") == 0 {
 				content.inverse = false
@@ -286,7 +299,75 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			} else {
 				return pktRule, errors.New("invalid content value : " + value)
 			}
+			currentDetectionType = "content"
+			fmt.Println("currentDetectionType :", content)
+		case "depth":
+			depthInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return pktRule, err
+			}
+			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].depth = int32(depthInt)
+		case "offset":
+			offsetInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return pktRule, err
+			}
+			if currentDetectionType == "content" {
+				pktRule.Detection.Content[len(pktRule.Detection.Content)-1].offset = int32(offsetInt)
+			} else if currentDetectionType == "protected_content" {
+				pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].offset = int32(offsetInt)
+			}
+		case "distance":
+			distanceInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return pktRule, err
+			}
+			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].distance = int32(distanceInt)
+		case "within":
+			withinInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return pktRule, err
+			}
+			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].within = int32(withinInt)
 
+		// ProtectedContent
+		case "protected_content":
+			/* examples:
+			* protected_content:"293C9EA246FF9985DC6F62A650F78986"; hash:md5; offset:0; length:4;
+			* protected_content:"56D6F32151AD8474F40D7B939C2161EE2BBF10023F4AF1DBB3E13260EBDC6342"; hash:sha256; offset:0; length:4;
+			 */
+			protectedContent := struct {
+				content string
+				inverse bool
+				offset  int32
+				length  int32
+				hash    string
+			}{}
+
+			if strings.Count(value[:strings.Index(value, "\"")], "!") == 0 {
+				protectedContent.inverse = false
+			} else if strings.Count(value[:strings.Index(value, "\"")], "!") == 1 {
+				protectedContent.inverse = true
+				value = value[strings.Index(value, "!")+1:]
+			} else {
+				return pktRule, errors.New("invalid content value :" + value)
+			}
+			protectedContent.content = strings.Replace(value, "\"", "", -1)
+			pktRule.Detection.ProtectedContent = append(pktRule.Detection.ProtectedContent, protectedContent)
+
+			currentDetectionType = "protected_content"
+		case "length":
+			lengthInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return pktRule, err
+			}
+			pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].length = int32(lengthInt)
+		case "hash":
+			if value == "md5" || value == "sha256" || value == "sha512" {
+				pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].hash = value
+			} else {
+				return pktRule, errors.New("invalid hash method :" + value)
+			}
 		}
 
 	}
