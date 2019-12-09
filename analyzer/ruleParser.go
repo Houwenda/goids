@@ -435,7 +435,7 @@ func ParseStreamRules(file string, StreamRulesList []StreamRule) ([]StreamRule, 
 			}
 		*/
 		// parse packet rule
-		tmpRule, err := ParseStreamLine(inputString)
+		tmpRule, err := ParseStreamLine(inputString[:len(inputString)-1])
 		if err != nil {
 			fmt.Println(err.Error())
 			return StreamRulesList, err
@@ -452,7 +452,57 @@ func ParseStreamRules(file string, StreamRulesList []StreamRule) ([]StreamRule, 
 func ParseStreamLine(inputString string) (StreamRule, error) {
 	var streamRule StreamRule
 
-	// TODO: implement stream rule parser
+	phraseList := strings.Split(strings.Replace(inputString, " ", "", -1), ";")
+	//fmt.Println(phraseList)
+	for _, phrase := range phraseList {
+		tmp := strings.Index(phrase, ":")
+		if tmp < 0 { // no ":" in phrase
+			return streamRule, errors.New("expect \":\" but not found")
+		}
+		key := phrase[:tmp]
+		key = strings.Replace(key, " ", "", -1)
+		value := phrase[tmp+1:]
+		//fmt.Println("key :", key, " value :", value)
 
+		switch key {
+		case "sid":
+			sidInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return streamRule, err
+			}
+			streamRule.Sid = int32(sidInt)
+		case "hour":
+			streamRule.Frequency.interval = "hour"
+			valueInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return streamRule, err
+			}
+			streamRule.Frequency.value = int32(valueInt)
+		case "minute":
+			streamRule.Frequency.interval = "minute"
+			valueInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return streamRule, err
+			}
+			streamRule.Frequency.value = int32(valueInt)
+		case "second":
+			streamRule.Frequency.interval = "second"
+			valueInt, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return streamRule, err
+			}
+			streamRule.Frequency.value = int32(valueInt)
+		}
+	}
+
+	// validate
+	if streamRule.Frequency.interval == "" {
+		return streamRule, errors.New("invalid interval type")
+	}
+	if streamRule.Frequency.value < 1 {
+		return streamRule, errors.New("invalid frequency")
+	}
+
+	fmt.Println("streamRule :", streamRule)
 	return streamRule, nil
 }

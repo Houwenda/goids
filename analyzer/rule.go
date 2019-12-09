@@ -45,5 +45,8 @@ type DetectionRule struct {
 
 type StreamRule struct {
 	Sid       int32
-	Frequency int32 // times per hour
+	Frequency struct {
+		interval string // hour minute second
+		value    int32  // number of packets per interval
+	}
 }

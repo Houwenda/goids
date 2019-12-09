@@ -80,7 +80,7 @@ func init() {
 	//log.SetOutput(os.Stdout) // test
 	log.Println("logging starts")
 
-	// TODO: parse rules
+	// parse rules
 	for _, ruleFile := range Conf.RulesConf.PktRules {
 		PktRulesList, err = analyzer.ParsePktRules(ruleFile, PktRulesList)
 		if err != nil {
@@ -89,7 +89,8 @@ func init() {
 		}
 	}
 	for _, ruleFile := range Conf.RulesConf.StreamRules {
-		if err := analyzer.ParseStreamRules(ruleFile, StreamRulesList); err != nil {
+		StreamRulesList, err = analyzer.ParseStreamRules(ruleFile, StreamRulesList)
+		if err != nil {
 			fmt.Println("error parsing rules file " + ruleFile)
 			log.Fatal("error parsing rules file " + ruleFile)
 		}
