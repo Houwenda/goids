@@ -45,4 +45,6 @@ type DetectionRule struct {
 }
 
 type StreamRule struct {
+	Sid       int32
+	Frequency int32
 }

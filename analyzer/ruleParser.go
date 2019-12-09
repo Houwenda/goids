@@ -213,7 +213,7 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		key := detailsPhrase[:tmp]
 		key = strings.Replace(key, " ", "", -1)
 		value := detailsPhrase[tmp+1:]
-		fmt.Println("key :", key, " value :", value)
+		//fmt.Println("key :", key, " value :", value)
 
 		// general rule options
 		switch key {
@@ -306,6 +306,9 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			if err != nil {
 				return pktRule, err
 			}
+			if len(pktRule.Detection.Content) < 1 {
+				return pktRule, errors.New("invalid position of depth")
+			}
 			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].depth = int32(depthInt)
 		case "offset":
 			offsetInt, err := strconv.ParseInt(value, 10, 32)
@@ -313,20 +316,34 @@ func parsePacketLine(inputString string) (PktRule, error) {
 				return pktRule, err
 			}
 			if currentDetectionType == "content" {
+				if len(pktRule.Detection.Content) < 1 {
+					return pktRule, errors.New("invalid position of offset")
+				}
 				pktRule.Detection.Content[len(pktRule.Detection.Content)-1].offset = int32(offsetInt)
 			} else if currentDetectionType == "protected_content" {
+				if len(pktRule.Detection.ProtectedContent) < 1 {
+					return pktRule, errors.New("invalid position of offset")
+				}
 				pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].offset = int32(offsetInt)
+			} else {
+				return pktRule, errors.New("invalid position of offset")
 			}
 		case "distance":
 			distanceInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
 				return pktRule, err
 			}
+			if len(pktRule.Detection.Content) < 1 {
+				return pktRule, errors.New("invalid position of distance")
+			}
 			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].distance = int32(distanceInt)
 		case "within":
 			withinInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
 				return pktRule, err
+			}
+			if len(pktRule.Detection.Content) < 1 {
+				return pktRule, errors.New("invalid position of within")
 			}
 			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].within = int32(withinInt)
 
@@ -361,15 +378,20 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			if err != nil {
 				return pktRule, err
 			}
+			if len(pktRule.Detection.ProtectedContent) < 1 {
+				return pktRule, errors.New("invalid position of length")
+			}
 			pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].length = int32(lengthInt)
 		case "hash":
 			if value == "md5" || value == "sha256" || value == "sha512" {
+				if len(pktRule.Detection.ProtectedContent) < 1 {
+					return pktRule, errors.New("invalid position of hash")
+				}
 				pktRule.Detection.ProtectedContent[len(pktRule.Detection.ProtectedContent)-1].hash = value
 			} else {
 				return pktRule, errors.New("invalid hash method :" + value)
 			}
 		}
-
 	}
 
 	fmt.Println("pktRule :", pktRule)
