@@ -14,7 +14,6 @@ type PktRule struct {
 		end   int32
 	}
 	Message        string
-	Flow           []string
 	Detection      DetectionRule
 	Metadata       []string
 	Reference      []string
@@ -46,5 +45,5 @@ type DetectionRule struct {
 
 type StreamRule struct {
 	Sid       int32
-	Frequency int32
+	Frequency int32 // times per hour
 }

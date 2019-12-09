@@ -53,13 +53,13 @@ func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 				log.Println("invalid rule syntax at ", inputStringByte)
 			}
 		*/
-		// TODO: parse rule
+		// parse packet rule
 		tmpRule, err := parsePacketLine(inputString)
 		if err != nil {
 			fmt.Println(err.Error())
 			return PktRulesList, err
 		}
-		tmpRule = PktRule{Action: file, Protocol: inputString} // test
+		//tmpRule = PktRule{Action: file, Protocol: inputString} // test
 
 		PktRulesList = append(PktRulesList, tmpRule)
 	}
@@ -68,18 +68,12 @@ func ParsePktRules(file string, PktRulesList []PktRule) ([]PktRule, error) {
 	return PktRulesList, nil
 }
 
-// parse packet rules from file
-func ParseStreamRules(file string, StreamRulesList []StreamRule) error {
-
-	return nil
-}
-
 func parsePacketLine(inputString string) (PktRule, error) {
 	var pktRule PktRule
 	tmp := strings.Index(inputString, "(")
 	header := inputString[:tmp]
 	details := inputString[tmp:]
-	fmt.Println("details :", details)
+	//fmt.Println("details :", details)
 	headerWordList := strings.Fields(strings.TrimSpace(header))
 	//fmt.Println("headerWordList :", headerWordList)
 
@@ -200,12 +194,19 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	*
 	***********************************************/
 	detailsPhraseList := strings.Split(strings.TrimSpace(details[1:strings.Index(details, ")")]), ";")
-	fmt.Println(detailsPhraseList)
+	//fmt.Println(detailsPhraseList)
+
+	// content or protected_content
+	currentDetectionType := ""
+
 	for _, detailsPhrase := range detailsPhraseList {
 		tmp := strings.Index(detailsPhrase, ":")
 		if tmp < 0 { // no ":" in phrase
-			fmt.Println(detailsPhrase)
+			//fmt.Println(detailsPhrase)
 			if detailsPhrase == "nocase" {
+				if len(pktRule.Detection.Content) < 1 {
+					return pktRule, errors.New("invalid position of nocase")
+				}
 				pktRule.Detection.Content[len(pktRule.Detection.Content)-1].nocase = true
 			}
 			continue
@@ -226,19 +227,20 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		case "sid":
 			sidInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
-				pktRule.SignatureId.Sid = int32(sidInt)
+				return pktRule, err
 			}
+			pktRule.SignatureId.Sid = int32(sidInt)
+
 		case "rev":
 			revInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
-				pktRule.SignatureId.Rev = int32(revInt)
+				return pktRule, err
 			}
+			pktRule.SignatureId.Rev = int32(revInt)
+
 		case "metadata":
 			pktRule.Metadata = append(pktRule.Metadata, value)
 		}
-
-		// content or protected_content
-		var currentDetectionType string
 
 		// payload detection rule options
 		switch key {
@@ -300,7 +302,6 @@ func parsePacketLine(inputString string) (PktRule, error) {
 				return pktRule, errors.New("invalid content value : " + value)
 			}
 			currentDetectionType = "content"
-			fmt.Println("currentDetectionType :", content)
 		case "depth":
 			depthInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
@@ -372,7 +373,6 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			protectedContent.content = strings.Replace(value, "\"", "", -1)
 			pktRule.Detection.ProtectedContent = append(pktRule.Detection.ProtectedContent, protectedContent)
 
-			currentDetectionType = "protected_content"
 		case "length":
 			lengthInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
@@ -407,4 +407,52 @@ func parseIP(inputString string) (net.IP, error) {
 	} else {
 		return nil, errors.New("invalid ip")
 	}
+}
+
+func ParseStreamRules(file string, StreamRulesList []StreamRule) ([]StreamRule, error) {
+
+	ruleFile, fileErr := os.Open(file)
+	if fileErr != nil {
+		log.Println(fileErr.Error())
+		return StreamRulesList, fileErr
+	}
+	defer ruleFile.Close()
+
+	reader := bufio.NewReader(ruleFile)
+	for {
+		inputString, readerError := reader.ReadString('\n')
+		if readerError == io.EOF {
+			break
+		}
+		if inputString[0] == '#' {
+			continue
+		}
+		inputStringByte := []byte(inputString[:len(inputString)-1])
+		log.Printf("The rule is: %s ", inputStringByte)
+		/*
+			if !ruleRegex.Match(inputStringByte) {
+				log.Println("invalid rule syntax at ", inputStringByte)
+			}
+		*/
+		// parse packet rule
+		tmpRule, err := ParseStreamLine(inputString)
+		if err != nil {
+			fmt.Println(err.Error())
+			return StreamRulesList, err
+		}
+		//tmpRule = PktRule{Action: file, Protocol: inputString} // test
+
+		StreamRulesList = append(StreamRulesList, tmpRule)
+	}
+	log.Printf("parsing from %s finished \n", file)
+
+	return StreamRulesList, nil
+}
+
+func ParseStreamLine(inputString string) (StreamRule, error) {
+	var streamRule StreamRule
+
+	// TODO: implement stream rule parser
+
+	return streamRule, nil
 }
