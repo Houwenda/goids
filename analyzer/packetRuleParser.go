@@ -310,11 +310,17 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			if len(pktRule.Detection.Content) < 1 {
 				return pktRule, errors.New("invalid position of depth")
 			}
+			if depthInt < 0 {
+				return pktRule, errors.New("invalid depth : " + value)
+			}
 			pktRule.Detection.Content[len(pktRule.Detection.Content)-1].depth = int32(depthInt)
 		case "offset":
 			offsetInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {
 				return pktRule, err
+			}
+			if offsetInt < 0 {
+				return pktRule, errors.New("invalid offset : " + value)
 			}
 			if currentDetectionType == "content" {
 				if len(pktRule.Detection.Content) < 1 {
@@ -375,6 +381,9 @@ func parsePacketLine(inputString string) (PktRule, error) {
 
 		case "length":
 			lengthInt, err := strconv.ParseInt(value, 10, 32)
+			if lengthInt < 1 {
+				return pktRule, errors.New("invalid length : " + value)
+			}
 			if err != nil {
 				return pktRule, err
 			}
@@ -391,6 +400,16 @@ func parsePacketLine(inputString string) (PktRule, error) {
 			} else {
 				return pktRule, errors.New("invalid hash method :" + value)
 			}
+		}
+	}
+
+	// validate packet rule detection
+	for _, content := range pktRule.Detection.Content {
+		if content.depth != 0 && content.offset > content.depth {
+			return pktRule, errors.New("offset greater than depth")
+		}
+		if int(content.depth) > len(content.content) || int(content.distance) > len(content.content) {
+			return pktRule, errors.New("invalid depth or distance")
 		}
 	}
 

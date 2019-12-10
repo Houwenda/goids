@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func StreamAnalyzeProc(streamPacketChannel chan *gopacket.Packet, streamRules []StreamRule) {
+func StreamAnalyzeProc(streamPacketChannel chan gopacket.Packet, streamRules []StreamRule) {
 
 	type pktTime struct {
 		packet gopacket.Packet
@@ -48,12 +48,12 @@ func StreamAnalyzeProc(streamPacketChannel chan *gopacket.Packet, streamRules []
 
 	// getting packets from pktAnalyzeWorker
 	for {
-		var pkt *gopacket.Packet
-		var pktRule *PktRule
+		var pkt gopacket.Packet
+		var pktRule PktRule
 		pkt = <-streamPacketChannel
-		tmpPkt := *pkt
+		tmpPkt := pkt
 		pktRule = <-PacketRuleChannel
-		tmpPktRule := *pktRule
+		tmpPktRule := pktRule
 
 		sid := tmpPktRule.SignatureId.Sid
 		var tmpPktTime pktTime
@@ -91,8 +91,9 @@ func StreamAnalyzeProc(streamPacketChannel chan *gopacket.Packet, streamRules []
 		// check number of pktTime in stack
 		if len(tmpPktTimeStack) > int(streamRule.Frequency.value) {
 			var incident Incident
-			incident.Time = tmpPktTime.time
+			incident.Action = streamRule.Action
 			incident.Description = tmpPktRule.Message
+			incident.Time = tmpPktTime.time
 			incident.Detail.Packets = make([]gopacket.Packet, 0)
 			for _, pktTime := range tmpPktTimeStack {
 				incident.Detail.Packets = append(incident.Detail.Packets, pktTime.packet)

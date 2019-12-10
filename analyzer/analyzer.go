@@ -12,12 +12,13 @@ var (
 	AlarmChannel        chan Incident
 	groupPacketChannel  []chan *gopacket.Packet
 	rulesPerGroup       int
-	StreamPacketChannel chan *gopacket.Packet // packet analyzer send packets to stream analyzer
-	PacketRuleChannel   chan *PktRule         // packet analyzer sends packet rules to stream analyzer
+	StreamPacketChannel chan gopacket.Packet // packet analyzer send packets to stream analyzer
+	PacketRuleChannel   chan PktRule         // packet analyzer sends packet rules to stream analyzer
 	PacketRulesList     []PktRule
 )
 
 type Incident struct {
+	Action      string
 	Time        time.Time
 	Description string
 	Detail      struct {
@@ -54,8 +55,8 @@ func Analyze(strict bool,
 	PacketRulesList = pktRulesList
 
 	// stream analyzer
-	StreamPacketChannel = make(chan *gopacket.Packet, 100)
-	PacketRuleChannel = make(chan *PktRule, 100)
+	StreamPacketChannel = make(chan gopacket.Packet, 100)
+	PacketRuleChannel = make(chan PktRule, 100)
 	go StreamAnalyzeProc(StreamPacketChannel, streamRulesList)
 
 	AlarmChannel = alarmChannel

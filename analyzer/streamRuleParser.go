@@ -67,6 +67,12 @@ func ParseStreamLine(inputString string) (StreamRule, error) {
 		//fmt.Println("key :", key, " value :", value)
 
 		switch key {
+		case "action":
+			if value == "log" || value == "alert" {
+				streamRule.Action = value
+			} else {
+				return streamRule, errors.New("invalid action : " + value)
+			}
 		case "sid":
 			sidInt, err := strconv.ParseInt(value, 10, 32)
 			if err != nil {

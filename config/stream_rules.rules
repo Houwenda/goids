@@ -3,5 +3,5 @@
 # minute: number of packets in a minute
 # second: number of packets in a second
 # packets will only be tacked in chosen interval: hour, minute and second
-sid:52056000; hour:3600; minute:60; second:1
-sid:52056000; hour:3600
+action:log; sid:52056000; hour:3600; minute:60; second:1
+action:alert; sid:52056000; hour:3600

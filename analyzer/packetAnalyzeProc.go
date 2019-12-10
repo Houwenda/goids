@@ -1,14 +1,20 @@
 package analyzer
 
 import (
+	"crypto/md5"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	hash2 "hash"
 	"log"
 	"net"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
@@ -131,6 +137,7 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 		ruleSrcIP, _ := parseIP(pktRule.Source)
 		ruleDstIP, _ := parseIP(pktRule.Destination)
 
+		// matches
 		if packetType == pktRule.Protocol && // action
 			srcIP != nil &&
 			srcIP.Equal(ruleSrcIP) && // source ip
@@ -141,20 +148,115 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 			dstPort >= pktRule.DstPort.start && // destination port
 			dstPort < pktRule.SrcPort.end &&
 			checkPayload(payload, pktRule) {
-
+			fmt.Println("packet matches")
+			if pktRule.Action == "stream" {
+				fmt.Println("stream packet sent to stream analyzer")
+				StreamPacketChannel <- *pkt
+				PacketRuleChannel <- pktRule
+			} else { // log alert
+				var incident Incident
+				incident.Action = pktRule.Action
+				incident.Description = pktRule.Message
+				incident.Time = time.Now()
+				incident.Detail.Rule = pktRule
+				incident.Detail.Packets = append(incident.Detail.Packets, *pkt)
+				AlarmChannel <- incident
+			}
 		}
 	}
 }
 
 func checkPayload(payload []byte, pktRule PktRule) bool {
 
-	for content := range pktRule.Detection.Content {
+	// content
+	distancePointer := 0
+	withinPointer := len(payload)
+	for _, content := range pktRule.Detection.Content {
+		start := 0
+		if content.offset > 0 {
+			if int32(distancePointer) > content.offset {
+				start = int(distancePointer)
+			} else {
+				start = int(content.offset)
+			}
+		}
 
+		end := len(payload)
+		if content.depth > 0 {
+			if int32(withinPointer+len(content.content)) > content.depth {
+				end = int(content.depth)
+			} else {
+				end = int(withinPointer + len(content.content))
+			}
+		}
+		// search range overflows payload
+		if end >= len(payload) {
+			end = len(payload)
+		}
+		searchRange := payload[start:end]
+		fmt.Println("searchRange: ", searchRange)
+		match := 0
+		if content.nocase {
+			match = strings.Count(strings.ToLower(string(searchRange)),
+				strings.ToLower(content.content)) // Boyer-Moore
+		} else {
+			match = strings.Count(string(searchRange), content.content) // Boyer-Moore
+		}
+		if match > 0 { // contains substr
+			if content.inverse { // inverse result
+				return false // not all match
+			} else { // straight result
+			}
+			if content.nocase {
+				index := strings.Index(strings.ToLower(string(searchRange)),
+					strings.ToLower(content.content))
+				distancePointer = index + len(content.content) + int(content.distance)
+			} else {
+				index := strings.Index(string(searchRange), content.content)
+				distancePointer = index +
+					len(content.content) +
+					int(content.distance)
+			}
+		} else { // does not contain substr
+			if content.inverse {
+			} else {
+				return false // not all match
+			}
+		}
 	}
 
-	for protectedContent := range pktRule.Detection.ProtectedContent {
-
+	// protected content
+	for _, protectedContent := range pktRule.Detection.ProtectedContent {
+		start := protectedContent.offset
+		end := protectedContent.offset + protectedContent.length
+		hashRange := payload[start:end]
+		var hash hash2.Hash
+		switch protectedContent.hash {
+		case "md5":
+			hash = md5.New()
+		case "sha256":
+			hash = sha256.New()
+		case "sha512":
+			hash = sha512.New()
+		}
+		_, err := hash.Write(hashRange)
+		if err != nil {
+			fmt.Println(err.Error())
+			log.Fatal(err.Error())
+		}
+		result := hash.Sum(nil)
+		if string(result) == protectedContent.content { // hashes match
+			if protectedContent.inverse { // inverse result
+				return false
+			} else {
+			}
+		} else { // hashes not match
+			if protectedContent.inverse {
+			} else {
+				return false
+			}
+		}
 	}
 
-	return false
+	return true
 }

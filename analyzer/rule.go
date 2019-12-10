@@ -24,6 +24,9 @@ type PktRule struct {
 	}
 }
 
+// detection rules are in 'and' relation
+// only when all conditions are satisfied
+// can a packet match this rule
 type DetectionRule struct {
 	Content []struct {
 		content  string
@@ -44,6 +47,7 @@ type DetectionRule struct {
 }
 
 type StreamRule struct {
+	Action    string // log alert
 	Sid       int32
 	Frequency struct {
 		interval string // hour minute second
