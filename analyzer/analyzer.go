@@ -1,10 +1,8 @@
 package analyzer
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"log"
 	"os"
 	"time"
@@ -58,7 +56,7 @@ func Analyze(strict bool,
 	// stream analyzer
 	StreamPacketChannel = make(chan *gopacket.Packet, 100)
 	PacketRuleChannel = make(chan *PktRule, 100)
-	go StreamAnalyze(StreamPacketChannel, streamRulesList)
+	go StreamAnalyzeProc(StreamPacketChannel, streamRulesList)
 
 	AlarmChannel = alarmChannel
 	rulesPerGroup = len(pktRulesList) / int(groupNum)
@@ -123,167 +121,5 @@ func PacketAnalyzeWorker(pktChannel chan *gopacket.Packet, pktRulesList []PktRul
 		packet := <-pktChannel
 		PacketAnalyzeProc(packet, pktRulesList)
 		os.Stdout.Sync()
-	}
-}
-
-func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
-	//fmt.Println(*pkt)
-	packet := *pkt
-	if err := packet.ErrorLayer(); err != nil {
-		log.Println("Error decoding some part of the packet:", err)
-	}
-	/*
-		if netw := packet.NetworkLayer(); netw != nil {
-			if netw.LayerType() == layers.LayerTypeIPv4 {
-				ipv4 := netw.(*layers.IPv4)
-				fmt.Println("IPv4 : from", ipv4.SrcIP, " to", ipv4.DstIP)
-			} else if netw.LayerType() == layers.LayerTypeIPv6 {
-				ipv6 := netw.(*layers.IPv6)
-				fmt.Println("IPv6 : from", ipv6.SrcIP, " to", ipv6.DstIP)
-			}
-		}
-		if trans := packet.TransportLayer(); trans != nil {
-			if trans.LayerType() == layers.LayerTypeTCP {
-				fmt.Println("TCP", len(trans.(*layers.TCP).Payload), ": \n", hex.Dump(trans.(*layers.TCP).Payload))
-			} else if trans.LayerType() == layers.LayerTypeUDP {
-				fmt.Println("UDP : \n", hex.Dump(trans.(*layers.UDP).Payload))
-			}
-		}
-		if app := packet.ApplicationLayer(); app != nil {
-			//log.Println(hex.Dump(app.Payload()))
-		}
-	*/
-	for _, tmpLayer := range packet.Layers() {
-		switch tmpLayer.LayerType() {
-		case layers.LayerTypeIPv4:
-			ipv4 := tmpLayer.(*layers.IPv4)
-			fmt.Println("IPv4 : from", ipv4.SrcIP, " to", ipv4.DstIP)
-		case layers.LayerTypeIPv6:
-			ipv6 := tmpLayer.(*layers.IPv6)
-			fmt.Println("IPv6 : from", ipv6.SrcIP, " to", ipv6.DstIP)
-		case layers.LayerTypeICMPv4:
-			icmpv4 := tmpLayer.(*layers.ICMPv4)
-			fmt.Println("ICMPv4 : ", hex.Dump(icmpv4.Payload))
-		case layers.LayerTypeICMPv6:
-			icmpv6 := tmpLayer.(*layers.ICMPv6)
-			fmt.Println("ICMPv6 : ", hex.Dump(icmpv6.Payload))
-		case layers.LayerTypeTCP:
-			tcp := tmpLayer.(*layers.TCP)
-			fmt.Println("TCP : from ", tcp.SrcPort, " to", tcp.DstPort, hex.Dump(tcp.Payload))
-		case layers.LayerTypeUDP:
-			udp := tmpLayer.(*layers.UDP)
-			fmt.Println("TCP : from ", udp.SrcPort, " to", udp.DstPort, hex.Dump(udp.Payload))
-		case layers.LayerTypeEthernet:
-			ethernet := tmpLayer.(*layers.Ethernet)
-			fmt.Println("Ethernet : from ", ethernet.SrcMAC, " to", ethernet.DstMAC)
-		default:
-			fmt.Println("other layer : ", tmpLayer.LayerType())
-		}
-
-	}
-	fmt.Println()
-}
-
-func StreamAnalyze(streamPacketChannel chan *gopacket.Packet, streamRules []StreamRule) {
-
-	type pktTime struct {
-		packet gopacket.Packet
-		time   time.Time
-	}
-
-	pktTimeStackDict := make(map[int32][]pktTime)
-	// add list to dict
-	for _, streamRule := range streamRules {
-		pktTimeStackDict[streamRule.Sid] = make([]pktTime, 0)
-	}
-	//fmt.Println(pktTimeStackDict)
-
-	// check PktRulesList
-	// if PktRulesList has stream action rules that
-	// are not defined in streamRulesList
-	sidList := make([]int32, 0)
-	for key, _ := range pktTimeStackDict {
-		sidList = append(sidList, key)
-	}
-	fmt.Println("sidList :", sidList)
-
-	for _, pktRule := range PacketRulesList {
-		if pktRule.Action == "stream" {
-			isMatch := false
-			for _, sid := range sidList {
-				if int32(sid) == pktRule.SignatureId.Sid {
-					isMatch = true
-					break
-				}
-			}
-			if !isMatch {
-				fmt.Println("stream action packet rule's sid not found in stream rules")
-				log.Fatal("stream action packet rule's sid not found in stream rules")
-			}
-		}
-	}
-
-	// getting packets from pktAnalyzeWorker
-	for {
-		var pkt *gopacket.Packet
-		var pktRule *PktRule
-		pkt = <-streamPacketChannel
-		tmpPkt := *pkt
-		pktRule = <-PacketRuleChannel
-		tmpPktRule := *pktRule
-
-		sid := tmpPktRule.SignatureId.Sid
-		var tmpPktTime pktTime
-		tmpPktTime.packet = tmpPkt
-		tmpPktTime.time = time.Now()
-
-		// get current streamRule
-		var streamRule StreamRule
-		for _, tmpStreamRule := range streamRules {
-			if tmpStreamRule.Sid == tmpPktRule.SignatureId.Sid {
-				streamRule = tmpStreamRule
-			}
-		}
-
-		// get packets in given interval
-		var tmpPktTimeStack []pktTime
-		for _, pktTime := range pktTimeStackDict[sid] {
-			switch streamRule.Frequency.interval {
-			case "hour":
-				if pktTime.time.Add(time.Hour).After(time.Now()) {
-					tmpPktTimeStack = append(tmpPktTimeStack, pktTime)
-				}
-			case "minute":
-				if pktTime.time.Add(time.Minute).After(time.Now()) {
-					tmpPktTimeStack = append(tmpPktTimeStack, pktTime)
-				}
-			case "second":
-				if pktTime.time.Add(time.Second).After(time.Now()) {
-					tmpPktTimeStack = append(tmpPktTimeStack, pktTime)
-				}
-			}
-		}
-		tmpPktTimeStack = append(tmpPktTimeStack, tmpPktTime)
-
-		// check number of pktTime in stack
-		if len(tmpPktTimeStack) > int(streamRule.Frequency.value) {
-			var incident Incident
-			incident.Time = tmpPktTime.time
-			incident.Description = tmpPktRule.Message
-			incident.Detail.Packets = make([]gopacket.Packet, 0)
-			for _, pktTime := range tmpPktTimeStack {
-				incident.Detail.Packets = append(incident.Detail.Packets, pktTime.packet)
-			}
-			incident.Detail.Rule = tmpPktRule
-
-			// send incident to alarmer
-			AlarmChannel <- incident
-
-			// clear stack
-			pktTimeStackDict[sid] = make([]pktTime, 0)
-		} else {
-			// remove outdated pktTime from stack
-			pktTimeStackDict[sid] = tmpPktTimeStack
-		}
 	}
 }
