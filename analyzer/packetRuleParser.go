@@ -408,8 +408,8 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		if content.depth != 0 && content.offset > content.depth {
 			return pktRule, errors.New("offset greater than depth")
 		}
-		if int(content.depth) > len(content.content) || int(content.distance) > len(content.content) {
-			return pktRule, errors.New("invalid depth or distance")
+		if content.depth > 0 && int(content.depth) < len(content.content)+int(content.offset) {
+			return pktRule, errors.New("invalid depth")
 		}
 	}
 

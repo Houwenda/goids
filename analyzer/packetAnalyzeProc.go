@@ -148,9 +148,9 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 			dstPort >= pktRule.DstPort.start && // destination port
 			dstPort < pktRule.SrcPort.end &&
 			checkPayload(payload, pktRule) {
-			fmt.Println("packet matches")
+			//fmt.Println("packet matches")
 			if pktRule.Action == "stream" {
-				fmt.Println("stream packet sent to stream analyzer")
+				//fmt.Println("stream packet sent to stream analyzer")
 				StreamPacketChannel <- *pkt
 				PacketRuleChannel <- pktRule
 			} else { // log alert
@@ -160,7 +160,9 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 				incident.Time = time.Now()
 				incident.Detail.Rule = pktRule
 				incident.Detail.Packets = append(incident.Detail.Packets, *pkt)
-				AlarmChannel <- incident
+
+				fmt.Println("new incident :", incident)
+				//AlarmChannel <- incident TODO: remove this after test
 			}
 		}
 	}
@@ -186,15 +188,15 @@ func checkPayload(payload []byte, pktRule PktRule) bool {
 			if int32(withinPointer+len(content.content)) > content.depth {
 				end = int(content.depth)
 			} else {
-				end = int(withinPointer + len(content.content))
+				end = withinPointer + len(content.content)
 			}
 		}
 		// search range overflows payload
-		if end >= len(payload) {
-			end = len(payload)
+		if end > len(payload) {
+			fmt.Println("search range overflows payload, return false")
+			return false
 		}
 		searchRange := payload[start:end]
-		fmt.Println("searchRange: ", searchRange)
 		match := 0
 		if content.nocase {
 			match = strings.Count(strings.ToLower(string(searchRange)),

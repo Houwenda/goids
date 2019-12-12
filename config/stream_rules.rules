@@ -5,3 +5,4 @@
 # packets will only be tacked in chosen interval: hour, minute and second
 action:log; sid:52056000; hour:3600; minute:60; second:1
 action:alert; sid:52056000; hour:3600
+action:alert; sid:5205601; minute:2

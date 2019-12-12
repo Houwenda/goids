@@ -23,6 +23,10 @@ func Mailer(incidentChannel <-chan analyzer.Incident, mailConf config.Mail) {
 	for incident := range incidentChannel {
 		fmt.Println("Mailer")
 
+		if incident.Action == "log" {
+			continue
+		}
+
 		if timer.Add(m).After(time.Now()) {
 			fmt.Println("too many mails in the interval")
 			continue
@@ -36,10 +40,28 @@ func Mailer(incidentChannel <-chan analyzer.Incident, mailConf config.Mail) {
 			m := gomail.NewMessage()
 			m.SetHeader("From", sender)
 			m.SetHeader("To", receiver)
-			m.SetHeader("Subject", "Incident from goids Alert!!! test")
-			m.SetBody("text/html", "This is a test from goids. Please pay close attention.")
+			m.SetHeader("Subject", "Alert!!! New incident reported by goids.")
 
-			// TODO: add incident
+			// create details string
+			details := "from " + incident.Detail.Rule.Source + " to " + incident.Detail.Rule.Destination +
+				" in " + incident.Detail.Rule.Protocol + " </br>\n" +
+				"class of activity: " + incident.Detail.Rule.Classification + "</br>\n" +
+				"metadata: </br>\n"
+			for _, metadata := range incident.Detail.Rule.Metadata {
+				details += "&nbsp;&nbsp;- " + metadata + "</br>\n"
+			}
+			details += "references: </br>\n"
+			for _, reference := range incident.Detail.Rule.Reference {
+				details += "&nbsp;&nbsp;- " + reference + "</br>\n"
+			}
+			details += "</br>\n A close inspection is recommended. For more details, check wui/jsonlog/database if they are enabled."
+
+			m.SetBody("text/html", "<body>An incident took place at "+
+				incident.Time.String()+
+				" . Please pay close attention! </br>\n"+
+				"Description: "+incident.Description+". </br>\n</br>\n "+
+				"Details: </br>\n"+details+"</body>")
+
 			fmt.Println(incident)
 
 			d := gomail.NewDialer(smtpServer, 25, sender, authKey)
