@@ -20,7 +20,7 @@ log:
     level: "debug"
 alarm:
     mail:
-        enable: true
+        enable: false
         max_freq: 300
         server_address: "smtp.yeah.net"
         username: "houwd123@yeah.net"

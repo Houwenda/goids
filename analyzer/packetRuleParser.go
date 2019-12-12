@@ -112,12 +112,12 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	// srcPort
 	if srcPort, err := strconv.ParseInt(headerWordList[3], 10, 32); err == nil && srcPort > 0 && srcPort < 65536 {
 		// 80 / 22 / ...
-		pktRule.SrcPort.start = int32(srcPort)
-		pktRule.SrcPort.end = int32(srcPort) + 1
+		pktRule.SrcPort.Start = int32(srcPort)
+		pktRule.SrcPort.End = int32(srcPort) + 1
 	} else if headerWordList[3] == "any" {
 		// any
-		pktRule.SrcPort.start = 0
-		pktRule.SrcPort.end = 65536
+		pktRule.SrcPort.Start = 0
+		pktRule.SrcPort.End = 65536
 	} else if result, err := regexp.Match(`\d+:\d+`, []byte(headerWordList[3])); err == nil && result {
 		// 1:65535 65535 included / 80:81 81 included
 		start := headerWordList[3][:strings.Index(headerWordList[3], ":")]
@@ -133,8 +133,8 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		if startInt >= endInt {
 			return pktRule, errors.New("srcPort start greater than end")
 		}
-		pktRule.SrcPort.start = int32(startInt)
-		pktRule.SrcPort.end = int32(endInt) + 1
+		pktRule.SrcPort.Start = int32(startInt)
+		pktRule.SrcPort.End = int32(endInt) + 1
 	} else {
 		return pktRule, errors.New("srcPort error")
 	}
@@ -156,12 +156,12 @@ func parsePacketLine(inputString string) (PktRule, error) {
 	// dstPort
 	if dstPort, err := strconv.ParseInt(headerWordList[6], 10, 32); err == nil && dstPort > 0 && dstPort < 65536 {
 		// 80 / 22 / ...
-		pktRule.DstPort.start = int32(dstPort)
-		pktRule.DstPort.end = int32(dstPort)
+		pktRule.DstPort.Start = int32(dstPort)
+		pktRule.DstPort.End = int32(dstPort) + 1
 	} else if headerWordList[6] == "any" {
 		// any
-		pktRule.DstPort.start = 0
-		pktRule.DstPort.end = 65536
+		pktRule.DstPort.Start = 0
+		pktRule.DstPort.End = 65536
 	} else if result, err := regexp.Match(`\d+:\d+`, []byte(headerWordList[6])); err == nil && result {
 		// 1:65535 65535 included / 80:81 81 included
 		start := headerWordList[6][:strings.Index(headerWordList[6], ":")]
@@ -177,8 +177,8 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		if startInt >= endInt {
 			return pktRule, errors.New("dstPort start greater than end")
 		}
-		pktRule.DstPort.start = int32(startInt)
-		pktRule.DstPort.end = int32(endInt) + 1
+		pktRule.DstPort.Start = int32(startInt)
+		pktRule.DstPort.End = int32(endInt) + 1
 	} else {
 		return pktRule, errors.New("dstPort error")
 	}

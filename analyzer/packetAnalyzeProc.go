@@ -143,10 +143,10 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 			srcIP.Equal(ruleSrcIP) && // source ip
 			dstIP != nil &&
 			dstIP.Equal(ruleDstIP) && // destination ip
-			srcPort >= pktRule.SrcPort.start && // source port
-			srcPort < pktRule.SrcPort.end &&
-			dstPort >= pktRule.DstPort.start && // destination port
-			dstPort < pktRule.SrcPort.end &&
+			srcPort >= pktRule.SrcPort.Start && // source port
+			srcPort < pktRule.SrcPort.End &&
+			dstPort >= pktRule.DstPort.Start && // destination port
+			dstPort < pktRule.SrcPort.End &&
 			checkPayload(payload, pktRule) {
 			//fmt.Println("packet matches")
 			if pktRule.Action == "stream" {
@@ -161,8 +161,7 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 				incident.Detail.Rule = pktRule
 				incident.Detail.Packets = append(incident.Detail.Packets, *pkt)
 
-				fmt.Println("new incident :", incident)
-				//AlarmChannel <- incident TODO: remove this after test
+				AlarmChannel <- incident
 			}
 		}
 	}

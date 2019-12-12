@@ -5,13 +5,13 @@ type PktRule struct {
 	Protocol string
 	Source   string // can be ipv4, ipv6, "any"
 	SrcPort  struct {
-		start int32
-		end   int32
+		Start int32
+		End   int32
 	}
 	Destination string // can be ipv4, ipv6, "any"
 	DstPort     struct {
-		start int32
-		end   int32
+		Start int32
+		End   int32
 	}
 	Message        string
 	Detection      DetectionRule
