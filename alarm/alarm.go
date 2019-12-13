@@ -86,8 +86,8 @@ func Databaser(dbIncidentChannel chan analyzer.Incident, dbPath string) {
 	//dbWriter.Flush()
 
 	for incident := range dbIncidentChannel {
-		fmt.Println("Databaser")
-		fmt.Println(incident)
+		//fmt.Println("Databaser")
+		//fmt.Println(incident)
 
 		// add incident record
 		record := make([]string, 14)

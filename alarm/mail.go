@@ -21,14 +21,15 @@ func Mailer(incidentChannel <-chan analyzer.Incident, mailConf config.Mail) {
 	receivers := mailConf.Receivers
 	smtpServer := mailConf.ServerAddress
 	for incident := range incidentChannel {
-		fmt.Println("Mailer")
+		//fmt.Println("Mailer")
 
-		if incident.Action == "log" {
+		if incident.Action != "alert" {
 			continue
 		}
 
 		if timer.Add(m).After(time.Now()) {
 			fmt.Println("too many mails in the interval")
+			log.Println("too many mails in the interval")
 			continue
 		} else {
 			timer = time.Now()

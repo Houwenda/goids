@@ -140,9 +140,9 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 		// matches
 		if packetType == pktRule.Protocol && // action
 			srcIP != nil &&
-			srcIP.Equal(ruleSrcIP) && // source ip
+			(srcIP.Equal(ruleSrcIP) || pktRule.Source == "any") && // source ip
 			dstIP != nil &&
-			dstIP.Equal(ruleDstIP) && // destination ip
+			(dstIP.Equal(ruleDstIP) || pktRule.Destination == "any") && // destination ip
 			srcPort >= pktRule.SrcPort.Start && // source port
 			srcPort < pktRule.SrcPort.End &&
 			dstPort >= pktRule.DstPort.Start && // destination port
@@ -245,7 +245,7 @@ func checkPayload(payload []byte, pktRule PktRule) bool {
 			fmt.Println(err.Error())
 			log.Fatal(err.Error())
 		}
-		result := hash.Sum(nil)
+		result := hash.Sum([]byte(""))
 		if string(result) == protectedContent.content { // hashes match
 			if protectedContent.inverse { // inverse result
 				return false

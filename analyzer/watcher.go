@@ -30,7 +30,7 @@ func Watch(interfaces []string, packetChannel chan<- gopacket.Packet) {
 	}
 
 	// test
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 }
 
 func Capture(handle *pcap.Handle, packetChannel chan<- gopacket.Packet) {

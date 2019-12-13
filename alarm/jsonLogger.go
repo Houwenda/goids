@@ -21,8 +21,12 @@ func JsonLogger(jsonIncidentChannel <-chan analyzer.Incident, jsonFileConf confi
 	jsonWriter := bufio.NewWriter(logFile)
 
 	for incident := range jsonIncidentChannel {
-		fmt.Println("JsonLogger")
+		//fmt.Println("JsonLogger")
 		//fmt.Println(incident)
+
+		if jsonFileConf.Level == "alert" && incident.Action == "log" {
+			continue
+		}
 
 		// add incident
 		result, err := json.Marshal(incident)

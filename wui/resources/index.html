@@ -1,6 +1,49 @@
+<!DOCTYPE html>
 <html>
-    <head>goids</head>
+    <head>
+        <title>goids</title>
+        <link href="https://cdn.bootcss.com/material-design-lite/1.3.0/material.indigo-orange.min.css" rel="stylesheet">
+    </head>
     <body>
-        <h1>THIS IS GOIDS TEST</h1>
+        <h1>Incidents</h1>
+        <table class="mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp">
+            <tr>
+                <th>ID</th>
+                <th>ACTION</th>
+                <th>TIMESTAMP</th>
+                <th>DESCRIPTION</th>
+                <th>PROTOCOL</th>
+                <th>SOURCE</th>
+                <th>SOURCE PORT</th>
+                <th>DESTINATION</th>
+                <th>DESTINATION PORT</th>
+                <th>METADATA</th>
+                <th>REFERENCE</th>
+                <th>CLASSTYPE</th>
+                <th>SID</th>
+                <th>REV</th>
+                <th>PAYLOAD</th>
+            </tr>
+            {{ range $index, $element := . }}
+                <tr>
+                    <td>{{ $index }}</td>
+                    <td class="mdl-data-table__cell--non-numeric">{{ $element.Action }}</td>
+                    <td>{{ $element.Timestamp }}</td>
+                    <td>{{ $element.Description }}</td>
+                    <td>{{ $element.Protocol }}</td>
+                    <td>{{ $element.Source }}</td>
+                    <td>{{ $element.SrcPort }}</td>
+                    <td>{{ $element.Destination }}</td>
+                    <td>{{ $element.DstPort }}</td>
+                    <td>{{ $element.Metadata }}</td>
+                    <td>{{ $element.Reference }}</td>
+                    <td>{{ $element.Classification }}</td>
+                    <td>{{ $element.Sid }}</td>
+                    <td>{{ $element.Rev }}</td>
+                    <td>{{ $element.Payload }}</td>
+                </tr>
+            {{ end }}
+
+        </table>
     </body>
 </html>
