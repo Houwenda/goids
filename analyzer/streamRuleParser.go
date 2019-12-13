@@ -111,6 +111,6 @@ func ParseStreamLine(inputString string) (StreamRule, error) {
 		return streamRule, errors.New("invalid frequency")
 	}
 
-	fmt.Println("streamRule :", streamRule)
+	//fmt.Println("streamRule :", streamRule)
 	return streamRule, nil
 }

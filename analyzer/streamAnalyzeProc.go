@@ -28,7 +28,7 @@ func StreamAnalyzeProc(streamPacketChannel chan gopacket.Packet, streamRules []S
 	for key, _ := range pktTimeStackDict {
 		sidList = append(sidList, key)
 	}
-	fmt.Println("sidList :", sidList)
+	//fmt.Println("sidList :", sidList)
 
 	for _, pktRule := range PacketRulesList {
 		if pktRule.Action == "stream" {

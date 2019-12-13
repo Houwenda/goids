@@ -5,6 +5,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"log"
+	"os"
 	"time"
 )
 
@@ -14,7 +15,7 @@ var (
 	timeout time.Duration = -1 * time.Second
 )
 
-func Watch(interfaces []string, packetChannel chan<- gopacket.Packet) {
+func Watch(interfaces []string, packetChannel chan<- gopacket.Packet, sigs chan os.Signal) {
 	fmt.Println("capturing packets starts")
 
 	for _, device := range interfaces {
@@ -29,8 +30,9 @@ func Watch(interfaces []string, packetChannel chan<- gopacket.Packet) {
 		go Capture(handle, packetChannel)
 	}
 
+	<-sigs
 	// test
-	time.Sleep(60 * time.Second)
+	//time.Sleep(60 * time.Second)
 }
 
 func Capture(handle *pcap.Handle, packetChannel chan<- gopacket.Packet) {

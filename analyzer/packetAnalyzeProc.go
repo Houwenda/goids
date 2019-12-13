@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
-	"encoding/hex"
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -123,14 +122,14 @@ func PacketAnalyzeProc(pkt *gopacket.Packet, pktRuleList []PktRule) {
 		}
 
 	}
-	switch packetType {
-	case "icmp":
-		fmt.Println(packetType, srcIP, "to", dstIP, "\n", hex.Dump(payload))
-	case "tcp":
-		fmt.Println(packetType, srcIP, ":", srcPort, "to", dstIP, ":", dstPort, "\n", hex.Dump(payload))
-	case "udp":
-		fmt.Println(packetType, srcIP, ":", srcPort, "to", dstIP, ":", dstPort, "\n", hex.Dump(payload))
-	}
+	//switch packetType {
+	//case "icmp":
+	//	fmt.Println(packetType, srcIP, "to", dstIP, "\n", hex.Dump(payload))
+	//case "tcp":
+	//	fmt.Println(packetType, srcIP, ":", srcPort, "to", dstIP, ":", dstPort, "\n", hex.Dump(payload))
+	//case "udp":
+	//	fmt.Println(packetType, srcIP, ":", srcPort, "to", dstIP, ":", dstPort, "\n", hex.Dump(payload))
+	//}
 
 	for _, pktRule := range pktRuleList {
 

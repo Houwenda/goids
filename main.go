@@ -8,9 +8,12 @@ import (
 	"goids/config"
 	"goids/wui"
 	"log"
+	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"os/user"
 	"runtime"
+	"syscall"
 )
 
 var (
@@ -53,11 +56,7 @@ func init() {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	log.Println(Conf.UiConf)
-	log.Println(Conf.RulesConf)
-	log.Println(Conf.LogConf)
-	log.Println(Conf.AnalyzerConf)
-	log.Println(Conf.AlarmConf)
+
 	if err = Conf.Validate(LogLevels); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -80,6 +79,12 @@ func init() {
 	//log.SetOutput(os.Stdout) // test
 	log.Println("logging starts")
 
+	log.Println(Conf.UiConf)
+	log.Println(Conf.RulesConf)
+	log.Println(Conf.LogConf)
+	log.Println(Conf.AnalyzerConf)
+	log.Println(Conf.AlarmConf)
+
 	// parse rules
 	for _, ruleFile := range Conf.RulesConf.PktRules {
 		PktRulesList, err = analyzer.ParsePktRules(ruleFile, PktRulesList)
@@ -101,7 +106,13 @@ func init() {
 }
 
 func main() {
-	fmt.Println("------- goids -------")
+
+	// pprof test
+	//go func() {
+	//	http.ListenAndServe("localhost:6060", nil)
+	//}()
+
+	fmt.Println("-------------- goids --------------")
 	//return
 	alarmChannel := make(chan analyzer.Incident, 100)
 	packetChannel := make(chan gopacket.Packet)
@@ -122,7 +133,12 @@ func main() {
 		PktRulesList,
 		StreamRulesList)
 
+	//quit
+	sigs := make(chan os.Signal, 1)
+	//done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSTOP)
+
 	// start capturing packets
-	analyzer.Watch(Conf.AnalyzerConf.Interfaces, packetChannel)
+	analyzer.Watch(Conf.AnalyzerConf.Interfaces, packetChannel, sigs)
 
 }

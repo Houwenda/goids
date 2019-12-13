@@ -73,9 +73,10 @@ func Analyze(strict bool,
 
 		// start emitting packets to each group
 		for pkt := range packetChannel {
-			tmpPkt := pkt
+			tmpPkt := new(gopacket.Packet)
+			*tmpPkt = pkt
 			for _, pktChannel := range groupPacketChannel {
-				pktChannel <- &tmpPkt
+				pktChannel <- tmpPkt
 			}
 		}
 	} else { // concurrent mode
@@ -89,10 +90,11 @@ func Analyze(strict bool,
 			//for i := 0; i < int(groupNum); i++ {
 			//	go PacketAnalyzeWorker(groupPacketChannel[i], pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			//}
-			tmpPkt := pkt
+			tmpPkt := new(gopacket.Packet)
+			*tmpPkt = pkt
 			for i := 0; i < int(groupNum); i++ {
 				//fmt.Printf("pkt sent to group %d \n", i)
-				go PacketAnalyzeProc(&tmpPkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
+				go PacketAnalyzeProc(tmpPkt, pktRulesList[i*rulesPerGroup:i*rulesPerGroup+rulesPerGroup])
 			}
 		}
 	}

@@ -413,7 +413,7 @@ func parsePacketLine(inputString string) (PktRule, error) {
 		}
 	}
 
-	fmt.Println("pktRule :", pktRule)
+	//fmt.Println("pktRule :", pktRule)
 	return pktRule, nil
 }
 
